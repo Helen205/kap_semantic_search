@@ -1,0 +1,98 @@
+services:
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: kap_chroma
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_db:/data
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v2/heartbeat"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - kap_network
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - kap_network
+    volumes:
+      - redis_data:/data
+  celery_worker:
+    build: .
+    command: celery_worker
+    depends_on:
+      - redis
+    volumes:
+      - ./logs:/app/logs
+      - last_processed:/app/last_processed
+      - chroma_db:/chroma_db
+    env_file:
+      - .env
+    networks:
+      - kap_network
+    restart: always
+
+  celery_beat:
+    build: .
+    command: celery_beat
+    depends_on:
+      - redis
+    volumes:
+      - ./logs:/app/logs
+      - last_processed:/app/last_processed
+      - chroma_db:/chroma_db
+    env_file:
+      - .env
+    networks:
+      - kap_network
+    restart: always
+
+  api:
+    build: .
+    command: api
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./logs:/app/logs
+      - last_processed:/app/last_processed
+      - chroma_db:/chroma_db
+    environment:
+      - .env
+    depends_on:
+      - chroma
+      - redis
+    networks:
+      - kap_network
+    restart: always
+
+  flower:
+    image: mher/flower
+    container_name: kap_flower
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    networks:
+      - kap_network
+    restart: always
+
+volumes:
+  chroma_db:
+    driver: local
+  last_processed:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  kap_network:
+    driver: bridge
