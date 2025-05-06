@@ -81,45 +81,80 @@ def parse_notifications(html_content):
     notifications = []
     last_processed = load_last_processed()
     last_id = last_processed.get('last_id', None)
-    found_last_id = last_id is None
     
     notification_rows = soup.find_all('tr', class_=lambda x: x and ('notification-row' in x or 'cursor-pointer' in x))
     logger.info(f"Total {len(notification_rows)} notifications found")
     
-    for row in notification_rows:
-        try:
+    last_id_index = None
+    if last_id:
+        for i, row in enumerate(notification_rows):
             checkbox = row.find('input', {'type': 'checkbox'})
-            if not checkbox or 'id' not in checkbox.attrs:
-                continue
+            if checkbox and 'id' in checkbox.attrs and checkbox['id'] == last_id:
+                last_id_index = i
+                break
+    
+    if last_id_index is not None:
+        new_notifications = notification_rows[:last_id_index]
+        logger.info(f"Found {len(new_notifications)} new notifications after last processed ID")
+        
+        for row in reversed(new_notifications):
+            try:
+                checkbox = row.find('input', {'type': 'checkbox'})
+                if not checkbox or 'id' not in checkbox.attrs:
+                    continue
+                    
+                notification_id = checkbox['id']
+                print(f"Processing notification ID: {notification_id}")
+
+                title = row.find('td', {'class': 'min-w-30'})
+                title = title.text.strip() if title else ''
                 
-            notification_id = checkbox['id']
-            
-            if not found_last_id:
-                if notification_id == last_id:
-                    found_last_id = True
+                content = get_notification_content(notification_id)
+                if content:
+                    notifications.append({
+                        'id': notification_id,
+                        'title': title,
+                        'header_info': content['header_info'],
+                        'content_info': content['content_info'],
+                        'history_info': content['history_info']
+                    })
+                    save_last_processed(notification_id)
+                
+                time.sleep(0.5)
+                
+            except Exception as e:
+                print(f"Error processing notification: {e}")
                 continue
+    else:
+        logger.info("No last processed ID found, processing all notifications")
+        for row in reversed(notification_rows):
+            try:
+                checkbox = row.find('input', {'type': 'checkbox'})
+                if not checkbox or 'id' not in checkbox.attrs:
+                    continue
+                    
+                notification_id = checkbox['id']
+                print(f"Processing notification ID: {notification_id}")
 
-            logger.info(f"Processing notification ID: {notification_id}")
-
-            title = row.find('td', {'class': 'min-w-30'})
-            title = title.text.strip() if title else ''
-            
-            content = get_notification_content(notification_id)
-            if content:
-                notifications.append({
-                    'id': notification_id,
-                    'title': title,
-                    'header_info': content['header_info'],
-                    'content_info': content['content_info'],
-                    'history_info': content['history_info']
-                })
-                save_last_processed(notification_id)
-            
-            time.sleep(0.5)
-            
-        except Exception as e:
-            print(f"Error processing notification: {e}")
-            continue
+                title = row.find('td', {'class': 'min-w-30'})
+                title = title.text.strip() if title else ''
+                
+                content = get_notification_content(notification_id)
+                if content:
+                    notifications.append({
+                        'id': notification_id,
+                        'title': title,
+                        'header_info': content['header_info'],
+                        'content_info': content['content_info'],
+                        'history_info': content['history_info']
+                    })
+                    save_last_processed(notification_id)
+                
+                time.sleep(0.5)
+                
+            except Exception as e:
+                print(f"Error processing notification: {e}")
+                continue
     
     return notifications
 
@@ -179,14 +214,19 @@ def run_next_script():
 
 if __name__ == "__main__":
     url = "https://www.kap.org.tr/tr/bildirim-sorgu-sonuc?srcbar=Y&cmp=Y&cat=4&s=4028328c594bfdca01594c0af9aa0057&st=Finansal%20Rapor&kw=bilan%C3%A7o&slf=FR"
-            
+    
+    logger.info("Starting content scraper")
+    logger.info(f"Last processed file path: {LAST_PROCESSED_FILE}")
+    
     html_content = fetch_html_content(url)
     if html_content:
+        logger.info("Successfully fetched HTML content")
         notifications = parse_notifications(html_content)
         if notifications:
+            logger.info(f"Found {len(notifications)} new notifications")
             save_to_files(notifications)
             run_next_script()
         else:
             logger.info("No new notifications found")
     else:
-        print("HTML content not fetched") 
+        logger.error("Failed to fetch HTML content") 

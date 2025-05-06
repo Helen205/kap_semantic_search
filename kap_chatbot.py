@@ -128,9 +128,11 @@ class KAPChatbot:
 
     def format_response(self, results, query, limit=3):
         if not results['documents']:
-            return "No disclosures found for this topic."
+            return {"error": "No disclosures found for this topic."}
 
-        response = "Related KAP disclosures:\n\n"
+        response_data = {
+            "disclosures": []
+        }
         
         if isinstance(results['documents'], list) and len(results['documents']) > 0 and isinstance(results['documents'][0], list):
             documents = results['documents'][0]
@@ -146,28 +148,29 @@ class KAPChatbot:
                 break
             try:
                 doc = str(doc) if doc else ''
+                if not doc.strip():
+                    continue
+                    
                 title = str(metadata.get('title', ''))
                 notification_id = str(metadata.get('notification_id', ''))
                 table_num = str(metadata.get('table_num', ''))
                 chunk_index = str(metadata.get('chunk_index', ''))
                 
-                response += f"{i+1}. {title}\n"
-                response += f"   Notification ID: {notification_id}\n"
-                if table_num:
-                    response += f"   Table Number: {table_num}\n"
-                if chunk_index:
-                    response += f"   Chunk Index: {chunk_index}\n"
-                response += f"   Content: {doc}\n"
-                if isinstance(distances, list) and len(distances) > 0 and isinstance(distances[0], list):
-                    response += f"   Similarity Score: {distances[0][i]:.2f}\n\n"
-                else:
-                    response += f"   Similarity Score: {distances[i]:.2f}\n\n"
+                disclosure = {
+                    "title": title,
+                    "notification_id": notification_id,
+                    "table_number": table_num if table_num else None,
+                    "chunk_index": chunk_index if chunk_index else None,
+                    "content": doc
+                }
+                
+                response_data["disclosures"].append(disclosure)
 
             except Exception as e:
                 print(f"Error formatting response for document {i}: {str(e)}")
                 continue
 
-        return response
+        return response_data
 
     def chat(self, query):
         try:

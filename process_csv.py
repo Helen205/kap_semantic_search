@@ -14,7 +14,7 @@ def process_csv(input_file='header_content.csv', output_file='header_content_pro
 
         title_doc = {
             'title': row['title'],
-            'content': row['title'],
+            'content': '',
             'is_title': True,
             'history': row['history'],
             'notification_id': row['id'],

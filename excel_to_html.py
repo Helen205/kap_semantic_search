@@ -70,39 +70,68 @@ def parse_notifications(html_content):
     notifications = []
     last_processed = load_last_processed()
     last_id = last_processed.get('last_id', None)
-    found_last_id = last_id is None
     
     notification_rows = soup.find_all('tr', class_=lambda x: x and ('notification-row' in x or 'cursor-pointer' in x))
     logger.info(f"Total {len(notification_rows)} notifications found")
     
-    for row in notification_rows:
-        try:
+    last_id_index = None
+    if last_id:
+        for i, row in enumerate(notification_rows):
             checkbox = row.find('input', {'type': 'checkbox'})
-            if not checkbox or 'id' not in checkbox.attrs:
-                continue
+            if checkbox and 'id' in checkbox.attrs and checkbox['id'] == last_id:
+                last_id_index = i
+                break
+    
+    if last_id_index is not None:
+        new_notifications = notification_rows[:last_id_index]
+        logger.info(f"Found {len(new_notifications)} new notifications after last processed ID")
+        
+        for row in new_notifications:
+            try:
+                checkbox = row.find('input', {'type': 'checkbox'})
+                if not checkbox or 'id' not in checkbox.attrs:
+                    continue
+                    
+                notification_id = checkbox['id']
+                logger.info(f"Processing notification ID: {notification_id}")
                 
-            notification_id = checkbox['id']
-            
-            if not found_last_id:
-                if notification_id == last_id:
-                    found_last_id = True
+                html_content = get_notification_content(notification_id)
+                if html_content:
+                    notifications.append({
+                        'id': notification_id,
+                        'html_content': html_content
+                    })
+                    save_last_processed(notification_id)
+                
+                time.sleep(0.5)
+                
+            except Exception as e:
+                logger.error(f"Error processing notification: {e}")
                 continue
-            
-            logger.info(f"Processing notification ID: {notification_id}")
-            
-            html_content = get_notification_content(notification_id)
-            if html_content:
-                notifications.append({
-                    'id': notification_id,
-                    'html_content': html_content
-                })
-                save_last_processed(notification_id)
-            
-            time.sleep(0.5)
-            
-        except Exception as e:
-            logger.error(f"Error processing notification: {e}")
-            continue
+    else:
+        logger.info("No last processed ID found, processing all notifications")
+        for row in notification_rows:
+            try:
+                checkbox = row.find('input', {'type': 'checkbox'})
+                if not checkbox or 'id' not in checkbox.attrs:
+                    continue
+                    
+                notification_id = checkbox['id']
+                logger.info(f"Processing notification ID: {notification_id}")
+                
+                html_content = get_notification_content(notification_id)
+                if html_content:
+                    notifications.append({
+                        'id': notification_id,
+                        'html_content': html_content
+                    })
+                    save_last_processed(notification_id)
+                
+                time.sleep(0.5)
+                
+            except Exception as e:
+                logger.error(f"Error processing notification: {e}")
+                continue
     
     return notifications
 
@@ -158,7 +187,7 @@ def run_scraper():
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(
-        crontab(minute=15),
+        crontab(minute=0),
         run_scraper.s()
 
     )

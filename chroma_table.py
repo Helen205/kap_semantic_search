@@ -48,7 +48,6 @@ def extract_info_from_filename(filename):
     return None
 
 def excel_to_json(df):
-
     records = df.to_dict(orient='records')
     return json.dumps(records, ensure_ascii=False)
 
@@ -62,6 +61,8 @@ def save_to_chroma():
                     excel_files.append(os.path.join(root, file))
         
         logger.info(f"Found {len(excel_files)} Excel files")
+        
+        processed_files = []  
         
         for file_path in excel_files:
             filename = os.path.basename(file_path)
@@ -89,12 +90,20 @@ def save_to_chroma():
                 )
                 
                 logger.info(f"Added Excel file {filename} to ChromaDB")
+                processed_files.append(file_path) 
             
             except Exception as e:
                 logger.error(f"Error processing file {filename}: {e}")
                 continue
             
         logger.info("Successfully saved all Excel files to ChromaDB")
+        
+        for file_path in processed_files:
+            try:
+                os.remove(file_path)
+                logger.info(f"Deleted processed Excel file: {file_path}")
+            except Exception as e:
+                logger.error(f"Error deleting Excel file {file_path}: {e}")
         
     except Exception as e:
         logger.error(f"Error in save_to_chroma: {e}")

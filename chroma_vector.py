@@ -3,6 +3,7 @@ from chromadb.utils import embedding_functions
 import logging
 from client import ClientWrapper
 from config import config
+import os
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -34,7 +35,12 @@ def setup_chroma():
 
 def save_to_chroma():
     try:
-        df = pd.read_csv('header_content_processed.csv')
+        csv_file = 'header_content_processed.csv'
+        if not os.path.exists(csv_file):
+            logger.error(f"CSV file {csv_file} not found")
+            return
+
+        df = pd.read_csv(csv_file)
         logger.info(f"Read {len(df)} records from CSV")
         
         collection = setup_chroma()
@@ -68,6 +74,12 @@ def save_to_chroma():
                 continue
                 
         logger.info("Successfully saved all documents to ChromaDB")
+        
+        try:
+            os.remove(csv_file)
+            logger.info(f"Deleted source CSV file: {csv_file}")
+        except Exception as e:
+            logger.error(f"Error deleting CSV file: {e}")
         
     except Exception as e:
         logger.error(f"Error in save_to_chroma: {e}")
