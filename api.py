@@ -22,6 +22,13 @@ class Query(BaseModel):
     max_results: Optional[int] = 3
     distance: Optional[float] = 0.86
 
+class CompanySearch(BaseModel):
+    company: str
+
+class CompanySearchResponse(BaseModel):
+    question: str
+    answers: dict
+
 class Response(BaseModel):
     question: dict
     answers: dict
@@ -64,6 +71,26 @@ async def query_kap(query: Query):
     except Exception as e:
         logger.error(f"Error processing query: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/company_search", response_model=CompanySearchResponse)
+async def company_search(query: CompanySearch):
+    try:
+        chatbot = KAPChatbot()
+
+        search_results = chatbot.company_search(
+            company=query.company,
+        )
+        
+        formatted_response = chatbot.format_response(search_results, query=query.company)
+        
+        return CompanySearchResponse(
+            question=query.company,
+            answers=formatted_response
+        )
+    except Exception as e:
+        logger.error(f"Error processing company search: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     logger.info("Starting FastAPI server...")

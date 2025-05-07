@@ -6,7 +6,11 @@ from chromadb.utils import embedding_functions
 from client import ClientWrapper
 from deep_translator import GoogleTranslator
 import time
+from chroma_vector import ChromaContent
+from chroma_table import ChromaTable
 
+content = ChromaContent()
+table = ChromaTable()
 
 class KAPChatbot:
     def __init__(self):
@@ -19,7 +23,7 @@ class KAPChatbot:
         embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
             model_name=self.model_name
         )
-        collection_name = "content"
+        collection_name = content.collection_name
         collection = client.get_collection(
             name=collection_name,
             embedding_function=embedding_function
@@ -31,7 +35,7 @@ class KAPChatbot:
         embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
             model_name=self.model_name
         )
-        collection_name = "table"
+        collection_name = table.collection_name
         collection = client.get_collection(
             name=collection_name,
             embedding_function=embedding_function
@@ -46,6 +50,14 @@ class KAPChatbot:
             return translator.translate(text)
         except Exception:
             return text
+        
+    def company_search(self, company):
+        company_results = self.content_collection.query(
+            query_texts=[company],
+            n_results=5,
+            where={"is_title": True}
+        )
+        return company_results
 
 
     def search_disclosures(self, query, company=None, n_results=5, distance_threshold=0.86):
@@ -87,7 +99,7 @@ class KAPChatbot:
                     if count == 2:
                         break
             
-            notification_ids = [meta.get('notification_id') for meta in filtered_companies]
+            notification_ids = [meta.get('notification_id') for meta in company_results['metadatas'][0]]
             
             if is_financial:
                 query_results = self.table_collection.query(
@@ -132,11 +144,9 @@ class KAPChatbot:
         if isinstance(results['documents'], list) and len(results['documents']) > 0 and isinstance(results['documents'][0], list):
             documents = results['documents'][0]
             metadatas = results['metadatas'][0]
-            distances = results['distances'][0]
         else:
             documents = results['documents']
             metadatas = results['metadatas']
-            distances = results['distances']
 
         for i, (doc, metadata) in enumerate(zip(documents, metadatas)):
             if i >= limit:
