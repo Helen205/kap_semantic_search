@@ -74,6 +74,8 @@ def parse_notifications(html_content):
     notification_rows = soup.find_all('tr', class_=lambda x: x and ('notification-row' in x or 'cursor-pointer' in x))
     logger.info(f"Total {len(notification_rows)} notifications found")
     
+    notification_rows.reverse()
+    
     last_id_index = None
     if last_id:
         for i, row in enumerate(notification_rows):
@@ -83,7 +85,7 @@ def parse_notifications(html_content):
                 break
     
     if last_id_index is not None:
-        new_notifications = notification_rows[:last_id_index]
+        new_notifications = notification_rows[last_id_index + 1:]
         logger.info(f"Found {len(new_notifications)} new notifications after last processed ID")
         
         for row in new_notifications:
@@ -187,7 +189,7 @@ def run_scraper():
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(
-        crontab(minute=0),
+        crontab(minute=50),
         run_scraper.s()
 
     )
