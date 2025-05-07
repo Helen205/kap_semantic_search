@@ -53,24 +53,23 @@ class ChromaContent:
             for index, row in df.iterrows():
                 try:
                     doc_id = f"{row['notification_id']}_{row['chunk_index']}"
-
                     document_text = row['title'] if row['is_title'] else row['content']
-
+                    
+                    metadata = {
+                        'title': str(row['title']) if pd.notna(row['title']) else '',
+                        'content': str(row['content']) if pd.notna(row['content']) else '',
+                        'is_title': bool(row['is_title']),
+                        'notification_id': str(row['notification_id']),
+                        'history': str(row['history']) if pd.notna(row['history']) else '',
+                        'chunk_index': int(row['chunk_index']),
+                        'total_chunks': int(row['total_chunks'])
+                    }
                     
                     collection.add(
                         documents=[document_text],
-                        metadatas=[{
-                            'title': row['title'],
-                            'content': row['content'],
-                            'is_title': row['is_title'],
-                            'notification_id': row['notification_id'],
-                            'history': row['history'],
-                            'chunk_index': row['chunk_index'],
-                            'total_chunks': row['total_chunks']
-                        }],
+                        metadatas=[metadata],
                         ids=[doc_id]
                     )
-                    
                     
                     logger.info(f"Added document {doc_id} to ChromaDB")
                     
