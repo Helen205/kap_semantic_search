@@ -173,16 +173,7 @@ def save_to_files(notifications):
         })
     
     header_content_df = pd.DataFrame(header_content_data)
-    
-    if os.path.exists('header_content.csv'):
-        existing_df = pd.read_csv('header_content.csv', encoding='utf-8-sig')
-        combined_df = pd.concat([existing_df, header_content_df], ignore_index=True)
-        combined_df = combined_df.drop_duplicates(subset=['id'], keep='last')
-        combined_df.to_csv('header_content.csv', index=False, encoding='utf-8-sig')
-        logger.info(f"Appended {len(header_content_df)} new notifications to existing file")
-    else:
-        header_content_df.to_csv('header_content.csv', index=False, encoding='utf-8-sig')
-        logger.info("Created new file with notifications")
+    header_content_df.to_csv('header_content.csv', index=False, encoding='utf-8-sig')
 
 def fetch_html_content(url):
     headers = {
