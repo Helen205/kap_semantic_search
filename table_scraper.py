@@ -134,7 +134,7 @@ def process_tc_fc_data(df):
                     else:        
                         df.iloc[tc_fc_row_idx, col] = f"{value}({third_info})"
             shifted_values = np.concatenate((["", "", "", "", ""], df.iloc[3].values[:-5]))
-            shifted_values = shifted_values.astype(str)  # Ensure string type
+            shifted_values = shifted_values.astype(str) 
             df.iloc[3] = shifted_values         
             df = df.drop(index=info_row_idx).reset_index(drop=True)
         return df
@@ -206,7 +206,7 @@ def extract_table_data(html, notification_id):
     except Exception as e:
         logger.error(f"Table data extraction error: {e}")
 
-def run_next_script():
+def run_next_script_table_chunk():
     try:
         logger.info("Starting table_chunk.py")
         subprocess.run(['python', 'table_chunk.py'], check=True)
@@ -236,7 +236,7 @@ if __name__ == "__main__":
                 logger.error(f"{html_file} processing error: {e}")
                 continue
         
-        run_next_script()
+        run_next_script_table_chunk()
                 
     except Exception as e:
         logger.error(f"Program running error: {e}")

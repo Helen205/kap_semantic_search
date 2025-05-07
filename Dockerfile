@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir fastapi uvicorn
 
 RUN echo '#!/bin/bash\n\
 if [ "$1" = "api" ]; then\n\
-    uvicorn api:app --host 0.0.0.0 --port 8001 --reload\n\
+    uvicorn api:app --host 0.0.0.0 --port 8001\n\
 elif [ "$1" = "celery_worker" ]; then\n\
     celery -A excel_to_html worker --loglevel=info\n\
 elif [ "$1" = "celery_beat" ]; then\n\

@@ -35,7 +35,7 @@ def process_table(file_path):
     except Exception as e:
         print(f"Error processing {file_path}: {str(e)}")
 
-def run_next_script():
+def run_next_script_table_chroma():
     try:
         logger.info("Starting chroma_table.py")
         subprocess.run(
@@ -53,7 +53,7 @@ def main():
         process_table(file_path)
     
     logger.info("All tables have been processed and chunked. Original files deleted.")
-    run_next_script()
+    run_next_script_table_chroma()
 
 if __name__ == "__main__":
     main()

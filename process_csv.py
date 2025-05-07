@@ -45,7 +45,7 @@ def process_csv(input_file='header_content.csv', output_file='header_content_pro
     print(f"Process completed: {output_file}")
     print(f"Total {len(new_df)} rows saved.")
 
-def run_next_script():
+def run_next_script_content_chroma():
     try:
         logger.info("Starting chroma_table.py")
         subprocess.run(
@@ -58,4 +58,4 @@ def run_next_script():
 
 if __name__ == "__main__":
     process_csv()
-    run_next_script()
+    run_next_script_content_chroma()

@@ -201,7 +201,7 @@ def fetch_html_content(url):
         print(f"URL connection error: {e}")
         return None
 
-def run_next_script():
+def run_next_script_content_process():
     try:
         logger.info("Starting process_csv.py")
         subprocess.run(
@@ -225,7 +225,7 @@ if __name__ == "__main__":
         if notifications:
             logger.info(f"Found {len(notifications)} new notifications")
             save_to_files(notifications)
-            run_next_script()
+            run_next_script_content_process()
         else:
             logger.info("No new notifications found")
     else:

@@ -5,11 +5,8 @@ import json
 from chromadb.utils import embedding_functions
 from client import ClientWrapper
 from deep_translator import GoogleTranslator
-import logging
-import pandas as pd
 import time
 
-logging.disable(logging.CRITICAL)
 
 class KAPChatbot:
     def __init__(self):
@@ -196,7 +193,6 @@ class KAPChatbot:
             results = self.search_disclosures(search_query, company, n_results=5)
             response = self.format_response(results, search_query, limit=3)         
 
-            
             print(response)
             
         except Exception as e:

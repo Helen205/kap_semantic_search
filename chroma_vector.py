@@ -8,7 +8,7 @@ import os
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-def setup_chroma():
+def setup_chroma_content():
     try:
         logger.info("Chroma connecting...")
         embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
@@ -33,7 +33,7 @@ def setup_chroma():
         logger.error(f"Chroma connection error: {e}")
         raise
 
-def save_to_chroma():
+def save_to_chroma_content():
     try:
         csv_file = 'header_content_processed.csv'
         if not os.path.exists(csv_file):
@@ -43,7 +43,7 @@ def save_to_chroma():
         df = pd.read_csv(csv_file)
         logger.info(f"Read {len(df)} records from CSV")
         
-        collection = setup_chroma()
+        collection = setup_chroma_content()
         
         for index, row in df.iterrows():
             try:
@@ -87,7 +87,7 @@ def save_to_chroma():
 
 def main():
     try:
-        save_to_chroma()
+        save_to_chroma_content()
     except Exception as e:
         logger.error(f"Error in main: {e}")
 

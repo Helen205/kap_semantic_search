@@ -11,7 +11,7 @@ import subprocess
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-def setup_chroma():
+def setup_chroma_table():
     try:
         logger.info("Chroma connecting...")
         embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
@@ -51,9 +51,9 @@ def excel_to_json(df):
     records = df.to_dict(orient='records')
     return json.dumps(records, ensure_ascii=False)
 
-def save_to_chroma():
+def save_to_chroma_table():
     try:
-        collection = setup_chroma()
+        collection = setup_chroma_table()
         excel_files = []
         for root, _, files in os.walk('notification_htmls'):
             for file in files:
@@ -109,7 +109,7 @@ def save_to_chroma():
         logger.error(f"Error in save_to_chroma: {e}")
         raise
 
-def run_next_script():
+def run_next_script_content():
     try:
         logger.info("Starting content_scraper.py")
         subprocess.run(
@@ -122,8 +122,8 @@ def run_next_script():
 
 def main():
     try:
-        save_to_chroma()
-        run_next_script()
+        save_to_chroma_table()
+        run_next_script_content()
     except Exception as e:
         logger.error(f"Error in main: {e}")
 

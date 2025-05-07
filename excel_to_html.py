@@ -156,7 +156,7 @@ def fetch_html_content(url):
         return None
 
 @app.task(name='excel_to_html.run_next_script')
-def run_next_script():
+def run_next_script_table():
     try:
         logger.info("Starting table_scraper.py")
         subprocess.run(['python', 'table_scraper.py'], check=True)
@@ -175,7 +175,7 @@ def run_scraper():
             notifications = parse_notifications(html_content)
             if notifications:
                 logger.info(f"Total {len(notifications)} new notifications processed and saved as HTML")
-                run_next_script.delay()
+                run_next_script_table.delay()
             else:
                 logger.info("No new notifications found")
             return True
@@ -189,7 +189,7 @@ def run_scraper():
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(
-        crontab(minute=50),
+        crontab(minute=33),
         run_scraper.s()
 
     )

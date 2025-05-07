@@ -5,10 +5,16 @@ from deep_translator import GoogleTranslator
 def translate_chunk(chunk):
     translator = GoogleTranslator(source='tr', target='en')
     try:
+        chunk = chunk.replace('\n', ' ').replace('\r', ' ')
+        chunk = ' '.join(chunk.split())  
+        if not chunk.strip():
+            return chunk
+            
         translation = translator.translate(chunk)
+              
         return translation
     except Exception as e:
-        print(f"Çeviri hatası: {e}")
+        print(f"Translation error: {e}")
         return chunk
 
 def split_text_into_sentences(text, min_words=300, max_words=320):
@@ -18,6 +24,9 @@ def split_text_into_sentences(text, min_words=300, max_words=320):
     text = str(text).strip()
     if not text:  
         return []
+
+    text = text.replace('\n', ' ').replace('\r', ' ')
+    text = ' '.join(text.split())  
 
     words = text.split()
     chunks = []
