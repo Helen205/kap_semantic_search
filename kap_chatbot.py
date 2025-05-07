@@ -99,7 +99,7 @@ class KAPChatbot:
                     if count == 2:
                         break
             
-            notification_ids = [meta.get('notification_id') for meta in company_results['metadatas'][0]]
+            notification_ids = [meta.get('notification_id') for meta in filtered_companies]
             
             if is_financial:
                 query_results = self.table_collection.query(
