@@ -4,7 +4,6 @@ from prompts import prompt as base_prompt
 import json
 from chromadb.utils import embedding_functions
 from client import ClientWrapper
-from kap_logger import KAPLogger
 from deep_translator import GoogleTranslator
 import logging
 import pandas as pd
@@ -17,7 +16,6 @@ class KAPChatbot:
         self.model_name = "sentence-transformers/all-MiniLM-L6-v2"
         self.content_collection = self._setup_content_collection()
         self.table_collection = self._setup_table_collection()
-        self.logger = KAPLogger()
 
     def _setup_content_collection(self):
         client = ClientWrapper().client
@@ -196,19 +194,10 @@ class KAPChatbot:
             print(f"\nQuery Analysis: {query_analysis}")
             
             results = self.search_disclosures(search_query, company, n_results=5)
-            response = self.format_response(results, search_query, limit=3)
-            gemini_prompt = f"""
-                Query: {search_query}
-                Answer: {results}
-                
-                Is this answer relevant to the query? This question is the result of a semantic search and should be evaluated according to whether it is within the answer to the question I asked. Evaluate in Turkish and explain why and give the percentage of accuracy.
-                """
-            gemini_evaluation = generate_response(gemini_prompt)    
-            
+            response = self.format_response(results, search_query, limit=3)         
 
             
             print(response)
-            self.logger.log_response(query, response, compatibility=gemini_evaluation, word=400)
             
         except Exception as e:
             print(f"\nError occurred: {str(e)}")
