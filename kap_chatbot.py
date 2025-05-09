@@ -43,6 +43,9 @@ class KAPChatbot:
         return collection
 
     def translate_to_english(self, text):
+        if isinstance(text, dict):
+            text = json.dumps(text, ensure_ascii=False)
+            
         if not text or not text.strip():
             return text
         try:
@@ -60,10 +63,17 @@ class KAPChatbot:
         return company_results
 
 
-    def search_disclosures(self, query, company=None, n_results=5, distance_threshold=0.86):
-        english_query = self.translate_to_english(query)
+    def search_disclosures(self, query, company=None, n_results=5, distance_threshold=0.86, query_type=None):
         query_analysis = self.analyze_query(query)
-        is_financial = query_analysis.get('query_type') == 'financial statement'
+        english_query = self.translate_to_english(query_analysis)
+
+        if query_type is None:
+            query_type = query_analysis.get('query_type', 'general KAP statement')
+
+        is_financial = query_type == 'financial statement'
+        is_general = query_type == 'general KAP statement'
+
+        query_results = None
 
         if company:
             company_results = self.content_collection.query(
@@ -113,25 +123,33 @@ class KAPChatbot:
                         if company_meta.get('notification_id') == notif_id:
                             meta['title'] = company_meta.get('title')
                             break
-            else:
+            elif is_general:
                 query_results = self.content_collection.query(
                     query_texts=[english_query],
                     n_results=n_results,
                     where={"notification_id": {"$in": notification_ids}}
                 )
-            
-            return query_results
         else:
             if is_financial:
-                return self.table_collection.query(
+                query_results = self.table_collection.query(
                     query_texts=[english_query],
                     n_results=n_results
                 )
-            else:
-                return self.content_collection.query(
+            elif is_general:
+                query_results = self.content_collection.query(
                     query_texts=[english_query],
                     n_results=n_results
                 )
+        
+        if query_results is None:
+            return {
+                'documents': [],
+                'metadatas': [],
+                'distances': [],
+                'total_results': 0
+            }
+        
+        return query_results
 
     def format_response(self, results, query, limit=3):
         if not results['documents']:
@@ -213,15 +231,13 @@ class KAPChatbot:
     def analyze_query(self, query):
         prompt = f"""
             Analyze the following financial question and the table content provided, and return a structured analysis with the following:
-            1. Question type (financial statement / general KAP statement)
-            2. Type of information sought (numerical value / text / date / etc.)
-            3. Important keywords 
-            4. Required data points or fields from the financial table that must be used in the calculation
-            5. Expected answer format
+            1. Type of information sought (numerical value / text / date / etc.)
+            2. Important keywords 
+            3. Required data points or fields from the financial table that must be used in the calculation
+            4. Expected answer format
             Question: {query}
             Provide the answer in JSON format:
             {{
-                "query_type": "financial statement" or "general KAP statement",
                 "info_type": "numerical value" or "text" or "date" or "other",
                 "keywords": ["key", "words"],
                 "required_operations": ["sum", "subtraction"],
@@ -246,7 +262,6 @@ class KAPChatbot:
             else:
                 raise ValueError("No valid JSON found in response")
             
-            analysis['query_type'] = analysis.get('query_type', 'general KAP statement')
             analysis['info_type'] = analysis.get('info_type', 'text')
             analysis['keywords'] = analysis.get('keywords', [])
             analysis['required_operations'] = analysis.get('required_operations', [])
@@ -256,7 +271,6 @@ class KAPChatbot:
         except Exception as e:
             print(f"Error in analyze_query: {str(e)}")
             return {
-                'query_type': 'general KAP statement',
                 'info_type': 'text',
                 'keywords': [],
                 'required_operations': [],

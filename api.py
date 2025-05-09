@@ -38,7 +38,7 @@ async def query_kap(query: Query):
     try:
         chatbot = KAPChatbot()
         
-        full_prompt = base_prompt.format(query=query.question)
+        full_prompt = base_prompt.format(query=query)
         results = generate_response(full_prompt)
         
         try:
@@ -51,6 +51,7 @@ async def query_kap(query: Query):
             query_data = json.loads(results)
             company = query_data.get('args', {}).get('company')
             search_query = query_data.get('args', {}).get('query')
+            query_type = query_data.get('query_type')
         except json.JSONDecodeError:
             company = None
             search_query = results
@@ -58,7 +59,8 @@ async def query_kap(query: Query):
         search_results = chatbot.search_disclosures(
             query=search_query,
             company=company,
-            distance_threshold=query.distance
+            distance_threshold=query.distance,
+            query_type=query_type
         )
         
         formatted_response = chatbot.format_response(results=search_results, query=results, limit=query.max_results)

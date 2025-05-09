@@ -11,11 +11,7 @@ CRITICAL RULES
 
 Return ONLY this JSON format:
 {{
-    "topic": "main topic of the question",
-    "query_type": "financial statement" or "general KAP statement",
-    "company": "company name",
-    "keywords": ["key", "words"],
-    "expected_format": "expected response format",
+    "query_type": "financial statement" or "general KAP statement"
     "args": {{
     "query": "original query",
     "company": "company name"
