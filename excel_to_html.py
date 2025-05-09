@@ -8,6 +8,7 @@ from celery import Celery
 from config import config
 import json
 from celery.schedules import crontab
+from client import ClientWrapper
 
 app = Celery('excel_to_html', broker=config.REDIS_URL, backend=config.REDIS_URL)
 
@@ -154,6 +155,17 @@ def fetch_html_content(url):
     except requests.RequestException as e:
         logger.error(f"URL connection error: {e}")
         return None
+    
+def chroma_connection_error():
+    try:
+        client = ClientWrapper()
+        collections = client.client.list_collections()
+        if collections is not None:
+            return True
+        return "CONNECTION_ERROR"
+    except Exception as e:
+        logger.error(f"Chroma connection error: {e}")
+        return "CONNECTION_ERROR"
 
 @app.task(name='excel_to_html.run_next_script')
 def run_next_script_table():
@@ -168,7 +180,10 @@ def run_next_script_table():
 @app.task(name='excel_to_html.run_scraper')
 def run_scraper():
     try:
-        url = "https://www.kap.org.tr/en/bildirim-sorgu-sonuc?srcbar=Y&cmp=Y&cat=4&s=4028328c594bfdca01594c0af9aa0057&st=Finansal+Rapor&kw=bilan%C3%A7o&slf=FR"
+        if chroma_connection_error() == "CONNECTION_ERROR":
+            logger.error("Chrome connection error - skipping last_id update")
+            return False
+        url = "https://www.kap.org.tr/en/bildirim-sorgu-sonuc?srcbar=Y&cmp=Y&cat=4&s=4028328c594bfdca01594c0af9aa0057&st=Finansal%20Rapor&kw=bilan%C3%A7o&slf=FR"
         
         html_content = fetch_html_content(url)
         if html_content:
@@ -189,7 +204,7 @@ def run_scraper():
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(
-        crontab(minute=33),
+        crontab(minute=56),
         run_scraper.s()
 
     )
