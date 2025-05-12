@@ -8,6 +8,8 @@ from celery import Celery
 from config import config
 import json
 from celery.schedules import crontab
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from client import ClientWrapper
 
 app = Celery('excel_to_html', broker=config.REDIS_URL, backend=config.REDIS_URL)
@@ -51,8 +53,18 @@ def get_notification_content(notification_id):
     }
     
     try:
-        response = requests.get(url, headers=headers)
+        session = requests.Session()
+        retries = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[500, 502, 503, 504],
+            raise_on_status=False
+        )
+        session.mount('https://', HTTPAdapter(max_retries=retries))
+
+        response = session.get(url, headers=headers, stream=True, timeout=30)
         response.raise_for_status()
+
         
         os.makedirs('notification_htmls', exist_ok=True)
         with open(f'notification_htmls/{notification_id}.html', 'w', encoding='utf-8') as f:
