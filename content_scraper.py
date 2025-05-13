@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 LAST_PROCESSED_FILE = config.LAST_PROCESSED_PATH
 
-def load_last_processed():
+def load_last_processed_to_content():
     try:
         if os.path.exists(LAST_PROCESSED_FILE):
             with open(LAST_PROCESSED_FILE, 'r') as f:
@@ -79,7 +79,7 @@ def get_notification_content(notification_id):
 def parse_notifications(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
     notifications = []
-    last_processed = load_last_processed()
+    last_processed = load_last_processed_to_content()
     last_id = last_processed.get('last_id', None)
     
     notification_rows = soup.find_all('tr', class_=lambda x: x and ('notification-row' in x or 'cursor-pointer' in x))

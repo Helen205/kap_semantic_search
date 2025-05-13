@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 LAST_PROCESSED_TABLE = config.LAST_PROCESSED_TABLE_PATH
 
-def load_last_processed():
+def load_last_processed_to_table():
     try:
         if os.path.exists(LAST_PROCESSED_TABLE):
             with open(LAST_PROCESSED_TABLE, 'r') as f:
@@ -32,7 +32,7 @@ def load_last_processed():
         logger.error(f"Error loading last processed file: {e}")
         return {}
 
-def save_last_processed(notification_id):
+def save_last_processed_to_table(notification_id):
     try:
         os.makedirs(os.path.dirname(LAST_PROCESSED_TABLE), exist_ok=True)
         with open(LAST_PROCESSED_TABLE, 'w') as f:
@@ -81,7 +81,7 @@ def get_notification_content(notification_id):
 def parse_notifications(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
     notifications = []
-    last_processed = load_last_processed()
+    last_processed = load_last_processed_to_table()
     last_id = last_processed.get('last_id', None)
     
     notification_rows = soup.find_all('tr', class_=lambda x: x and ('notification-row' in x or 'cursor-pointer' in x))
@@ -116,7 +116,7 @@ def parse_notifications(html_content):
                         'id': notification_id,
                         'html_content': html_content
                     })
-                    save_last_processed(notification_id)
+                    save_last_processed_to_table(notification_id)
                 
                 time.sleep(0.5)
                 
@@ -140,7 +140,7 @@ def parse_notifications(html_content):
                         'id': notification_id,
                         'html_content': html_content
                     })
-                    save_last_processed(notification_id)
+                    save_last_processed_to_table(notification_id)
                 
                 time.sleep(0.5)
                 
@@ -216,7 +216,7 @@ def run_scraper():
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(
-        crontab(minute=56),
+        crontab(minute=54),
         run_scraper.s()
 
     )

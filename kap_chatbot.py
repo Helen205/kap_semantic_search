@@ -209,18 +209,28 @@ class KAPChatbot:
                 query_data = json.loads(query)
                 company = query_data.get('args', {}).get('company')
                 search_query = query_data.get('args', {}).get('query')
+                query_type = query_data.get('query_type')
             except json.JSONDecodeError as e:
                 print(f"JSON parse error: {str(e)}")
                 company = None
                 search_query = query
+                query_type = 'general KAP statement'
                 print(f"\nNormal query: {query}")
 
             query_analysis = self.analyze_query(search_query)
             print(f"\nQuery Analysis: {query_analysis}")
             
-            results = self.search_disclosures(search_query, company, n_results=5)
-            response = self.format_response(results, search_query, limit=3)         
-
+            results = self.search_disclosures(search_query, company, n_results=5, query_type=query_type)
+            response = self.format_response(results, search_query, limit=3)
+            gemini_prompt = f"""
+                Query: {search_query}
+                Answer: {results}
+                
+                Is this answer relevant to the query? This question is the result of a semantic search and should be evaluated according to whether it is within the answer to the question I asked. Evaluate in Turkish and explain why and give the percentage of accuracy.
+                """
+            gemini_evaluation = generate_response(gemini_prompt)   
+            print(gemini_evaluation)
+            
             print(response)
             
         except Exception as e:
