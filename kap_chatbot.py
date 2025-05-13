@@ -194,16 +194,18 @@ class KAPChatbot:
                 continue
 
         return response_data
+    def clean_json(self, json_str):
+        json_str = json_str.strip()
+        if json_str.startswith('```json'):
+            json_str = json_str[7:]
+        if json_str.endswith('```'):
+            json_str = json_str[:-3]
+        return json_str.strip()
 
     def chat(self, query):
         try:
             try:
-                query = query.strip()
-                if query.startswith('```json'):
-                    query = query[7:]
-                if query.endswith('```'):
-                    query = query[:-3]
-                query = query.strip()
+                query = self.clean_json(query)
                 
                 print(f"\nCleaned JSON: {query}")
                 query_data = json.loads(query)
@@ -256,13 +258,7 @@ class KAPChatbot:
         """
         try:
             response = generate_response(prompt)
-            response = response.strip()
-            
-            if response.startswith('```json'):
-                response = response[7:]
-            if response.endswith('```'):
-                response = response[:-3]
-            response = response.strip()
+            response = self.clean_json(response)
             
             start_idx = response.find('{')
             end_idx = response.rfind('}')

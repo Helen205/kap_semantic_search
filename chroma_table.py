@@ -71,10 +71,10 @@ class ChromaTable:
                     collection.add(
                         documents=[content],
                         metadatas=[{
-                            'notification_id': info['notification_id'],
-                            'table_num': info['table_num'],
-                            'chunk_index': info['chunk_index'],
-                            'filename': filename,
+                            'notification_id': int(info['notification_id']),
+                            'table_num': int(info['table_num']),
+                            'chunk_index': int(info['chunk_index']),
+                            'filename': str(filename),
                             'content_type': 'excel_json'
                         }],
                         ids=[table_id]

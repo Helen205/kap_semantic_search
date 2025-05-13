@@ -204,7 +204,7 @@ def run_next_script_content_process():
         logger.error(f"Unexpected error: {e}")
 
 if __name__ == "__main__":
-    url = "https://www.kap.org.tr/tr/bildirim-sorgu-sonuc?srcbar=Y&cmp=Y&cat=4&s=4028328c594bfdca01594c0af9aa0057&st=Finansal%20Rapor&kw=bilan%C3%A7o&slf=FR"
+    url = "https://www.kap.org.tr/tr/bildirim-sorgu-sonuc?srcbar=Y&cmp=Y&cat=2&m=8acae2c494bafc93019566721bf70ddf&t=A1%20CAP%C4%B0TAL%20PORTF%C3%96Y%20Y%C3%96NET%C4%B0M%C4%B0%20A.%C5%9E.&kw=A1%20CAP%C4%B0TAL%20YATIRIM%20MENKUL%20DE%C4%9EERLER%20A.%C5%9E.%20sat%C4%B1%C5%9F%C4%B1n%20tamam&slf=ALL"
     
     logger.info("Starting content scraper")
     logger.info(f"Last processed file path: {LAST_PROCESSED_FILE}")
