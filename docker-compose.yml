@@ -17,6 +17,7 @@ services:
       start_period: 30s
     networks:
       - kap_network
+
   redis:
     image: redis:latest
     restart: always
@@ -26,9 +27,10 @@ services:
       - kap_network
     volumes:
       - redis_data:/data
+
   celery_worker:
     build: .
-    command: celery_worker
+    command: celery -A excel_to_html worker --loglevel=info
     depends_on:
       - redis
     volumes:
@@ -43,7 +45,7 @@ services:
 
   celery_beat:
     build: .
-    command: celery_beat
+    command: celery -A excel_to_html beat --loglevel=info
     depends_on:
       - redis
     volumes:
@@ -58,7 +60,7 @@ services:
 
   api:
     build: .
-    command: api
+    command: uvicorn api:app --host 0.0.0.0 --port 8001
     ports:
       - "8001:8001"
     volumes:
@@ -79,6 +81,10 @@ services:
     container_name: kap_flower
     ports:
       - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    command: celery flower --broker=redis://redis:6379/0 --port=5555
     depends_on:
       - redis
     networks:

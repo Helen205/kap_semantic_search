@@ -215,10 +215,11 @@ def run_scraper():
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
+    run_scraper.delay()
+    
     sender.add_periodic_task(
         crontab(minute=54),
         run_scraper.s()
-
     )
 
 
