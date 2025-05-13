@@ -14,10 +14,10 @@ class ClientWrapper:
     def _connect(self):
         try:            
             _client = chromadb.HttpClient( 
-                host=config.CHROMA_HOST,
+                host=f"http://{config.CHROMA_HOST}",
                 port=config.CHROMA_PORT,
-                tenant = config.CHROMA_TENANT,
-                database = "default_database",
+                tenant=config.CHROMA_TENANT,
+                database="default_database",
                 settings=Settings(allow_reset=True, anonymized_telemetry=False,
                                 persist_directory=config.CHROMA_PERSIST_DIRECTORY
                                 )
