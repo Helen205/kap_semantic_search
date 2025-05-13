@@ -170,8 +170,8 @@ class KAPChatbot:
             if i >= limit:
                 break
             try:
-                doc = str(doc) if doc else ''
-                if not doc.strip():
+                content = metadata.get('content', '')
+                if not content.strip():
                     continue
                     
                 title = str(metadata.get('title', ''))
