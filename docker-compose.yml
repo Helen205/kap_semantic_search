@@ -87,6 +87,7 @@ services:
     command: celery flower --broker=redis://redis:6379/0 --port=5555
     depends_on:
       - redis
+      - celery_worker
     networks:
       - kap_network
     restart: always

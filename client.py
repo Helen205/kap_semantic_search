@@ -14,7 +14,7 @@ class ClientWrapper:
     def _connect(self):
         try:            
             _client = chromadb.HttpClient( 
-                host=f"http://{config.CHROMA_HOST}",
+                host=config.CHROMA_HOST,
                 port=config.CHROMA_PORT,
                 tenant=config.CHROMA_TENANT,
                 database="default_database",

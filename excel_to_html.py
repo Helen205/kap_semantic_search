@@ -170,11 +170,9 @@ def fetch_html_content(url):
     
 def chroma_connection_error():
     try:
-        client = ClientWrapper()
-        collections = client.client.list_collections()
-        if collections is not None:
-            return True
-        return "CONNECTION_ERROR"
+        client_wrapper = ClientWrapper()
+        client = client_wrapper.client 
+        return True
     except Exception as e:
         logger.error(f"Chroma connection error: {e}")
         return "CONNECTION_ERROR"
