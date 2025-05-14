@@ -1,7 +1,6 @@
 import logging
 import chromadb
 from chromadb.config import Settings
-from chromadb.utils import embedding_functions
 from config import config
 import redis
 
@@ -10,10 +9,6 @@ logger = logging.getLogger(__name__)
 class ClientWrapper:
     def __init__(self):
         self._client = self._connect()
-        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
-        )
-        
 
     def _connect(self):
         try:            
@@ -35,11 +30,11 @@ class ClientWrapper:
             logger.error(f"Chroma connection error: {e}")
             raise
 
-    def get_collection(self, name):
+    def get_collection(self, name, embedding_function):
         try:
             collection = self._client.get_or_create_collection(
                 name=name,
-                embedding_function=self.embedding_function
+                embedding_function=embedding_function
             )
             logger.info(f"Created new collection: {name}")
             return collection
