@@ -3,6 +3,7 @@ import chromadb
 from chromadb.config import Settings
 from config import config
 import redis
+from chromadb.utils import embedding_functions as ef
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ class ClientWrapper:
 
     def _connect(self):
         try:            
-            _client = chromadb.HttpClient( 
+            _client = chromadb.PersistentClient( 
                 host=config.CHROMA_HOST,
                 port=config.CHROMA_PORT,
                 tenant=config.CHROMA_TENANT,
@@ -32,11 +33,14 @@ class ClientWrapper:
 
     def get_collection(self, name, embedding_function):
         try:
+            if embedding_function is None:
+                embedding_function = ef.DefaultEmbeddingFunction()
+
             collection = self._client.get_or_create_collection(
                 name=name,
                 embedding_function=embedding_function
             )
-            logger.info(f"Created new collection: {name}")
+            logger.info(f"Created or retrieved collection: {name}")
             return collection
         except Exception as e:
             logger.error(f"Collection creation error: {e}")
