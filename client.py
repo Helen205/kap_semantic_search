@@ -3,7 +3,6 @@ import chromadb
 from chromadb.config import Settings
 from config import config
 import redis
-from chromadb.utils import embedding_functions as ef
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +32,9 @@ class ClientWrapper:
 
     def get_collection(self, name, embedding_function):
         try:
-            if embedding_function is None:
-                embedding_function = ef.DefaultEmbeddingFunction() # type: ignore
-
             collection = self._client.get_or_create_collection(
                 name=name,
-                embedding_function=embedding_function
+                embedding_function=embedding_function # type: ignore
             )
             logger.info(f"Created or retrieved collection: {name}")
             return collection

@@ -15,8 +15,9 @@ logger = logging.getLogger(__name__)
 class ChromaTable:
     def __init__(self):
         self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
+            model_name="all-MiniLM-L6-v2"
         )
+        
         self.collection_name = getattr(config, "CHROMA_COLLECTION", "table")
 
     def setup_chroma_table(self):

@@ -14,7 +14,7 @@ table = ChromaTable()
 
 class KAPChatbot:
     def __init__(self):
-        self.model_name = "sentence-transformers/all-MiniLM-L6-v2"
+        self.model_name = "all-MiniLM-L6-v2"
         self.content_collection = self._setup_content_collection()
         self.table_collection = self._setup_table_collection()
 
