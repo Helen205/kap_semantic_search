@@ -34,7 +34,7 @@ class ClientWrapper:
     def get_collection(self, name, embedding_function):
         try:
             if embedding_function is None:
-                embedding_function = ef.DefaultEmbeddingFunction()
+                embedding_function = ef.DefaultEmbeddingFunction() # type: ignore
 
             collection = self._client.get_or_create_collection(
                 name=name,
