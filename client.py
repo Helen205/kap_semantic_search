@@ -13,7 +13,7 @@ class ClientWrapper:
 
     def _connect(self):
         try:            
-            _client = chromadb.PersistentClient( 
+            _client = chromadb.HttpClient( 
                 host=config.CHROMA_HOST,
                 port=config.CHROMA_PORT,
                 tenant=config.CHROMA_TENANT,
