@@ -1,5 +1,6 @@
 from chromadb.utils import embedding_functions
 from client import ClientWrapper
+import pandas as pd
 
 embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction()
 
@@ -7,10 +8,28 @@ collection = ClientWrapper().get_collection(
                 name="test",
                 embedding_function=embedding_function
 )
-collection.add(
-    documents=["lorem ipsum", "doc2", "doc3", "doc4"],
-    metadatas=[{"chapter": "3", "verse": "16"}, {"chapter": "3", "verse": "5"}, {"chapter": "29", "verse": "11"}, {"chapter": "29", "verse": "11"}],
-    ids=["id1", "id2", "id3", "id4"]
-)
 
-print("Documents added successfully!")
+df = pd.read_csv('header_content_processed.csv')
+for index, row in df.iterrows():
+    try:
+        doc_id = f"{row['notification_id']}_{row['chunk_index']}"
+        document_text = row['title'] if row['is_title'] else row['content']
+                    
+        metadata = {
+        'title': str(row['title']) if pd.notna(row['title']) else '',
+        'content': str(row['content']) if pd.notna(row['content']) else '',
+        'is_title': bool(row['is_title']),
+        'notification_id': int(row['notification_id']),
+        'history': str(row['history']) if pd.notna(row['history']) else '',
+        'chunk_index': int(row['chunk_index']),
+        'total_chunks': int(row['total_chunks'])
+        }
+                    
+        collection.add(
+        documents=[document_text],
+        metadatas=[metadata],
+        ids=[doc_id]
+        )
+        print("Documents added successfully!")
+    except Exception as e:
+        print(f"Error adding documents: {e}")
