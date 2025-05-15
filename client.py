@@ -1,6 +1,7 @@
 import logging
 import chromadb
 from chromadb.config import Settings
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 from config import config
 import redis
 
@@ -9,17 +10,13 @@ logger = logging.getLogger(__name__)
 class ClientWrapper:
     def __init__(self):
         self._client = self._connect()
+        self.embedding_function = SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
 
     def _connect(self):
         try:            
             _client = chromadb.HttpClient( 
                 host=config.CHROMA_HOST,
                 port=config.CHROMA_PORT,
-                tenant=config.CHROMA_TENANT,
-                database="default_database",
-                settings=Settings(allow_reset=True, anonymized_telemetry=False,
-                                persist_directory=config.CHROMA_PERSIST_DIRECTORY
-                                )
             )
             logger.info("Successfully connected to Chroma")
             
@@ -30,11 +27,11 @@ class ClientWrapper:
             logger.error(f"Chroma connection error: {e}")
             raise
 
-    def get_collection(self, name, embedding_function):
+    def get_or_create_collection(self, name):
         try:
             collection = self._client.get_or_create_collection(
                 name=name,
-                embedding_function=embedding_function 
+                embedding_function=self.embedding_function,
             )
             logger.info(f"Created or retrieved collection: {name}")
             return collection

@@ -5,3 +5,6 @@ __pycache__/
 *.pyw
 *.pyz
 venv/
+*.env
+.env
+/env

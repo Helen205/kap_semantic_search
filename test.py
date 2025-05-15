@@ -1,12 +1,8 @@
-from chromadb.utils import embedding_functions
 from client import ClientWrapper
 import pandas as pd
 
-embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction()
-
-collection = ClientWrapper().get_collection(
-                name="test",
-                embedding_function=embedding_function
+collection = ClientWrapper().get_or_create_collection(
+    name="test"
 )
 
 df = pd.read_csv('header_content_processed.csv')
@@ -33,3 +29,12 @@ for index, row in df.iterrows():
         print("Documents added successfully!")
     except Exception as e:
         print(f"Error adding documents: {e}")
+
+
+results = collection.query(
+    query_texts=["What is the content of the document?"],
+    n_results=5,
+)
+
+print("Query results:")
+print(results)
