@@ -26,8 +26,7 @@ class ChromaTable:
             collection_name = self.collection_name
 
             collection = ClientWrapper().get_collection(
-                name=collection_name,
-                embedding_function=embedding_function
+                name=collection_name
             )
             logger.info(f"Using existing collection: {collection_name}")
         

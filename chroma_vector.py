@@ -22,7 +22,6 @@ class ChromaContent:
 
             collection = ClientWrapper().get_collection(
                 name=collection_name,
-                embedding_function=embedding_function
             )
             logger.info(f"Using existing collection: {collection_name}")
         

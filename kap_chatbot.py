@@ -25,8 +25,7 @@ class KAPChatbot:
         )
         collection_name = content.collection_name
         collection = client.get_collection(
-            name=collection_name,
-            embedding_function=embedding_function
+            name=collection_name
         )
         return collection
 
@@ -37,8 +36,7 @@ class KAPChatbot:
         )
         collection_name = table.collection_name
         collection = client.get_collection(
-            name=collection_name,
-            embedding_function=embedding_function
+            name=collection_name
         )
         return collection
 
