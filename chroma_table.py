@@ -6,7 +6,6 @@ import os
 import re
 import json
 import subprocess
-from chromadb.utils import embedding_functions
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -22,7 +21,7 @@ class ChromaTable:
 
             collection_name = self.collection_name
 
-            collection = ClientWrapper().get_collection(
+            collection = ClientWrapper().get_or_create_collection(
                 name=collection_name
             )
             logger.info(f"Using existing collection: {collection_name}")

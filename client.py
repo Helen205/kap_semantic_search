@@ -26,7 +26,7 @@ class ClientWrapper:
             logger.error(f"Chroma connection error: {e}")
             raise
 
-    def get_collection(self, name):
+    def get_or_create_collection(self, name):
         try:
             collection = self._client.get_or_create_collection(
                 name=name,

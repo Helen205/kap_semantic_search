@@ -2,7 +2,6 @@ import pandas as pd
 import logging
 from client import ClientWrapper
 from config import config
-from chromadb.utils import embedding_functions
 import os
 
 
@@ -18,7 +17,7 @@ class ChromaContent:
             logger.info("Chroma connecting...")
             collection_name = self.collection_name
 
-            collection = ClientWrapper().get_collection(
+            collection = ClientWrapper().get_or_create_collection(
                 name=collection_name
             )
             logger.info(f"Using existing collection: {collection_name}")

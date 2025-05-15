@@ -16,12 +16,16 @@ class KAPChatbot:
     def __init__(self):
         self.content_collection = self._setup_content_collection()
         self.table_collection = self._setup_table_collection()
+        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
+            model_name="all-MiniLM-L6-v2"
+        )
 
     def _setup_content_collection(self):
         client = ClientWrapper().client
         collection_name = content.collection_name
         collection = client.get_collection(
-            name=collection_name
+            name=collection_name,
+            embedding_function=self.embedding_function
         )
         return collection
 
@@ -29,7 +33,8 @@ class KAPChatbot:
         client = ClientWrapper().client
         collection_name = table.collection_name
         collection = client.get_collection(
-            name=collection_name
+            name=collection_name,
+            embedding_function=self.embedding_function
         )
         return collection
 
