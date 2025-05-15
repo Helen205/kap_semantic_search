@@ -37,6 +37,7 @@ class Response(BaseModel):
 async def query_kap(query: Query):
     try:
         chatbot = KAPChatbot()
+        print(f"Received query: {query}")
         
         full_prompt = base_prompt.format(query=query)
         results = generate_response(full_prompt)

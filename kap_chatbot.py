@@ -27,9 +27,6 @@ class KAPChatbot:
 
     def _setup_table_collection(self):
         client = ClientWrapper().client
-        embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name=self.model_name
-        )
         collection_name = table.collection_name
         collection = client.get_collection(
             name=collection_name
