@@ -2,23 +2,21 @@ import google.generativeai as genai
 from config import config
 from prompts import prompt as base_prompt
 import json
-from chromadb.utils import embedding_functions
 from client import ClientWrapper
 from deep_translator import GoogleTranslator
 import time
 from chroma_vector import ChromaContent
 from chroma_table import ChromaTable
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 content = ChromaContent()
 table = ChromaTable()
 
 class KAPChatbot:
     def __init__(self):
+        self.embedding_function = SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
         self.content_collection = self._setup_content_collection()
         self.table_collection = self._setup_table_collection()
-        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="all-MiniLM-L6-v2"
-        )
 
     def _setup_content_collection(self):
         client = ClientWrapper().client
