@@ -1,6 +1,5 @@
 import logging
 import chromadb
-from chromadb.config import Settings
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 from config import config
 import redis

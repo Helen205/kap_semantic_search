@@ -13,21 +13,17 @@ logger = logging.getLogger(__name__)
 
 
 class ChromaTable:
-    def __init__(self):
-        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction()
-        
+    def __init__(self):        
         self.collection_name = getattr(config, "CHROMA_COLLECTION", "table")
 
     def setup_chroma_table(self):
         try:
             logger.info("Chroma connecting...")
-            embedding_function = self.embedding_function
 
             collection_name = self.collection_name
 
             collection = ClientWrapper().get_collection(
-                name=collection_name,
-                embedding_function=embedding_function
+                name=collection_name
             )
             logger.info(f"Using existing collection: {collection_name}")
         
