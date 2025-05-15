@@ -14,15 +14,11 @@ table = ChromaTable()
 
 class KAPChatbot:
     def __init__(self):
-        self.model_name = "all-MiniLM-L6-v2"
         self.content_collection = self._setup_content_collection()
         self.table_collection = self._setup_table_collection()
 
     def _setup_content_collection(self):
         client = ClientWrapper().client
-        embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name=self.model_name
-        )
         collection_name = content.collection_name
         collection = client.get_collection(
             name=collection_name
