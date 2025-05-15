@@ -56,6 +56,23 @@ class KAPChatbot:
         )
         return company_results
 
+    def _get_titles_for_notifications(self, notification_ids):
+        try:
+            content_results = self.content_collection.query(
+                query_texts=[""],
+                n_results=len(notification_ids),
+                where={"notification_id": {"$in": notification_ids}}
+            )
+        
+            title_map = {}
+            for meta in content_results['metadatas'][0]:
+                if meta.get('is_title', False):
+                    title_map[meta.get('notification_id')] = meta.get('title')
+            
+            return title_map
+        except Exception as e:
+            print(f"Error getting titles: {str(e)}")
+            return {}
 
     def search_disclosures(self, query, company=None, n_results=5, distance_threshold=0.86, query_type=None):
         query_analysis = self.analyze_query(query)
@@ -111,12 +128,14 @@ class KAPChatbot:
                     n_results=n_results,
                     where={"notification_id": {"$in": notification_ids}}
                 )
+                
+                title_map = self._get_titles_for_notifications(notification_ids)
+                
                 for i, meta in enumerate(query_results['metadatas'][0]):
                     notif_id = meta.get('notification_id')
-                    for company_meta in filtered_companies:
-                        if company_meta.get('notification_id') == notif_id:
-                            meta['title'] = company_meta.get('title')
-                            break
+                    if notif_id in title_map:
+                        meta['title'] = title_map[notif_id]
+                
             elif is_general:
                 query_results = self.content_collection.query(
                     query_texts=[english_query],
@@ -129,6 +148,16 @@ class KAPChatbot:
                     query_texts=[english_query],
                     n_results=n_results
                 )
+                
+                notification_ids = [meta.get('notification_id') for meta in query_results['metadatas'][0]]
+                
+                title_map = self._get_titles_for_notifications(notification_ids)
+                
+                for i, meta in enumerate(query_results['metadatas'][0]):
+                    notif_id = meta.get('notification_id')
+                    if notif_id in title_map:
+                        meta['title'] = title_map[notif_id]
+                
             elif is_general:
                 query_results = self.content_collection.query(
                     query_texts=[english_query],
