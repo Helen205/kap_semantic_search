@@ -11,9 +11,7 @@ logger = logging.getLogger(__name__)
 
 class ChromaContent:
     def __init__(self): 
-        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="all-MiniLM-L6-v2"
-        )
+        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction()
         self.collection_name = getattr(config, "CHROMA_COLLECTION", "content")
 
     def setup_chroma_content(self):

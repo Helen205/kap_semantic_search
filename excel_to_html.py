@@ -116,7 +116,6 @@ def parse_notifications(html_content):
                         'id': notification_id,
                         'html_content': html_content
                     })
-                    save_last_processed_to_table(notification_id)
                 
                 time.sleep(0.5)
                 
@@ -140,7 +139,6 @@ def parse_notifications(html_content):
                         'id': notification_id,
                         'html_content': html_content
                     })
-                    save_last_processed_to_table(notification_id)
                 
                 time.sleep(0.5)
                 

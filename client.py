@@ -34,7 +34,7 @@ class ClientWrapper:
         try:
             collection = self._client.get_or_create_collection(
                 name=name,
-                embedding_function=embedding_function # type: ignore
+                embedding_function=embedding_function 
             )
             logger.info(f"Created or retrieved collection: {name}")
             return collection
