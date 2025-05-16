@@ -20,10 +20,11 @@ class Config(BaseSettings):
     @property
     def REDIS_URL(self) -> str:
         return f"redis://redis:{self.REDIS_PORT}/0"
-
+    
     class Config:
         env_file = ".env"
         case_sensitive = True
         extra = "allow"  
 
 config = Config()
+

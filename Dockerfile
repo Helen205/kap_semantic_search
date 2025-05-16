@@ -17,4 +17,5 @@ RUN mkdir -p /app/logs /app/last_processed
 
 RUN pip install --no-cache-dir fastapi uvicorn
 
+CMD ["python", "src/main.py"]
 

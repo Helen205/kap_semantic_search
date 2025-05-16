@@ -13,7 +13,7 @@ Return ONLY this JSON format:
 {{
     "query_type": "financial statement" or "general KAP statement"
     "args": {{
-    "query": "original query",
-    "company": "company name"
+        "query": "original query",
+        "company": "company name"
     }}
 }} """

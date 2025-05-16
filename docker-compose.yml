@@ -30,7 +30,7 @@ services:
 
   celery_worker:
     build: .
-    command: celery -A excel_to_html worker --loglevel=info
+    command: celery -A src.core.celery_app worker --loglevel=info
     depends_on:
       - redis
     volumes:
@@ -45,7 +45,7 @@ services:
 
   celery_beat:
     build: .
-    command: celery -A excel_to_html beat --loglevel=info
+    command: celery -A src.core.celery_app beat --loglevel=info
     depends_on:
       - redis
     volumes:
@@ -60,7 +60,7 @@ services:
 
   api:
     build: .
-    command: uvicorn api:app --host 0.0.0.0 --port 8001
+    command: uvicorn src.api.routes:app --host 0.0.0.0 --port 8001
     ports:
       - "8001:8001"
     volumes:

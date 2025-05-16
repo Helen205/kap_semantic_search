@@ -1,19 +1,24 @@
 import google.generativeai as genai
-from config import config
-from prompts import prompt as base_prompt
-import json
-from client import ClientWrapper
+import logging
+from ..core.config import config
+from .chroma_content_service import ChromaContentService
+from .chroma_table_service import ChromaTableService
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+from ..core.client import ClientWrapper
 from deep_translator import GoogleTranslator
 import time
-from chroma_vector import ChromaContent
-from chroma_table import ChromaTable
-from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+import json
 
-content = ChromaContent()
-table = ChromaTable()
+
+logger = logging.getLogger(__name__)
+
+content = ChromaContentService()
+table = ChromaTableService()
 
 class KAPChatbot:
     def __init__(self):
+        genai.configure(api_key=config.GOOGLE_API_KEY)
+        self.model = genai.GenerativeModel('gemini-pro')
         self.embedding_function = SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
         self.content_collection = self._setup_content_collection()
         self.table_collection = self._setup_table_collection()
@@ -56,23 +61,73 @@ class KAPChatbot:
         )
         return company_results
 
-    def _get_titles_for_notifications(self, notification_ids):
+    def _filter_company_results(self, company_results, distance_threshold):
+        if not company_results['documents'][0]:
+            return [], []
+            
+        filtered_companies = []
+        filtered_ids = []
+        count = 0
+        
+        print(f"\nCompanies with {distance_threshold} distance or less:")
+        for i, (meta, distance) in enumerate(zip(company_results['metadatas'][0], company_results['distances'][0])):
+            if distance < distance_threshold and meta not in filtered_companies:
+                filtered_companies.append(meta)
+                filtered_ids.append(meta.get('notification_id'))
+                print(f"{i+1}. Title: {meta.get('title')}")
+                print(f"   Distance: {distance:.2f}")
+                count += 1
+                if count == 2:
+                    break
+            else:
+                filtered_companies.append(meta)
+                filtered_ids.append(meta.get('notification_id'))
+                print(f"   Title: {meta.get('title')}")
+                print(f"   Distance: {distance:.2f}")
+                count += 1
+                if count == 2:
+                    break
+                    
+        return filtered_companies, filtered_ids
+
+    def _get_titles_for_notifications(self, notification_ids, query_results):
         try:
             content_results = self.content_collection.query(
                 query_texts=[""],
                 n_results=len(notification_ids),
                 where={"notification_id": {"$in": notification_ids}}
             )
-        
+            
             title_map = {}
             for meta in content_results['metadatas'][0]:
                 if meta.get('is_title', False):
                     title_map[meta.get('notification_id')] = meta.get('title')
             
-            return title_map
+            for i, meta in enumerate(query_results['metadatas'][0]):
+                notif_id = meta.get('notification_id')
+                if notif_id in title_map:
+                    meta['title'] = title_map[notif_id]
+            
+            return query_results
         except Exception as e:
             print(f"Error getting titles: {str(e)}")
-            return {}
+            return query_results
+
+    def _get_table_results(self, english_query, notification_ids, n_results):
+        where_clause = {"notification_id": {"$in": notification_ids}} if notification_ids else {}
+        return self.table_collection.query(
+            query_texts=[english_query],
+            n_results=n_results,
+            where=where_clause
+        )
+
+    def _get_content_results(self, english_query, notification_ids, n_results):
+        where_clause = {"notification_id": {"$in": notification_ids}} if notification_ids else {}
+        return self.content_collection.query(
+            query_texts=[english_query],
+            n_results=n_results,
+            where=where_clause
+        )
 
     def search_disclosures(self, query, company=None, n_results=5, distance_threshold=0.86, query_type=None):
         query_analysis = self.analyze_query(query)
@@ -85,6 +140,7 @@ class KAPChatbot:
         is_general = query_type == 'general KAP statement'
 
         query_results = None
+        notification_ids = None
 
         if company:
             company_results = self.content_collection.query(
@@ -93,76 +149,28 @@ class KAPChatbot:
                 where={"is_title": True}
             )
             
-            if not company_results['documents'][0]:
-                print(f"Warning: No results found for company '{company}'")
+            filtered_companies, notification_ids = self._filter_company_results(company_results, distance_threshold)
+            
+            if not filtered_companies:
                 return {
                     'documents': [],
                     'metadatas': [],
                     'distances': [],
                     'total_results': 0
                 }
-            filtered_companies = []
-            count = 0
-            print(f"\nCompanies with {distance_threshold} distance or less:")
-            for i, (meta, distance) in enumerate(zip(company_results['metadatas'][0], company_results['distances'][0])):
-                if distance < distance_threshold and meta not in filtered_companies:
-                    filtered_companies.append(meta)
-                    print(f"{i+1}. Title: {meta.get('title')}")
-                    print(f"   Distance: {distance:.2f}")
-                    count += 1
-                    if count == 2:
-                        break
-                else:
-                    filtered_companies.append(meta)
-                    print(f"   Title: {meta.get('title')}")
-                    print(f"   Distance: {distance:.2f}")
-                    count += 1
-                    if count == 2:
-                        break
-            
-            notification_ids = [meta.get('notification_id') for meta in filtered_companies]
             
             if is_financial:
-                query_results = self.table_collection.query(
-                    query_texts=[english_query],
-                    n_results=n_results,
-                    where={"notification_id": {"$in": notification_ids}}
-                )
-                
-                title_map = self._get_titles_for_notifications(notification_ids)
-                
-                for i, meta in enumerate(query_results['metadatas'][0]):
-                    notif_id = meta.get('notification_id')
-                    if notif_id in title_map:
-                        meta['title'] = title_map[notif_id]
-                
+                query_results = self._get_table_results(english_query, notification_ids, n_results)
+                query_results = self._get_titles_for_notifications(notification_ids, query_results)
             elif is_general:
-                query_results = self.content_collection.query(
-                    query_texts=[english_query],
-                    n_results=n_results,
-                    where={"notification_id": {"$in": notification_ids}}
-                )
+                query_results = self._get_content_results(english_query, notification_ids, n_results)
         else:
             if is_financial:
-                query_results = self.table_collection.query(
-                    query_texts=[english_query],
-                    n_results=n_results
-                )
-                
+                query_results = self._get_table_results(english_query, None, n_results)
                 notification_ids = [meta.get('notification_id') for meta in query_results['metadatas'][0]]
-                
-                title_map = self._get_titles_for_notifications(notification_ids)
-                
-                for i, meta in enumerate(query_results['metadatas'][0]):
-                    notif_id = meta.get('notification_id')
-                    if notif_id in title_map:
-                        meta['title'] = title_map[notif_id]
-                
+                query_results = self._get_titles_for_notifications(notification_ids, query_results)
             elif is_general:
-                query_results = self.content_collection.query(
-                    query_texts=[english_query],
-                    n_results=n_results
-                )
+                query_results = self._get_content_results(english_query, None, n_results)
         
         if query_results is None:
             return {
@@ -254,7 +262,7 @@ class KAPChatbot:
                 
                 Is this answer relevant to the query? This question is the result of a semantic search and should be evaluated according to whether it is within the answer to the question I asked. Evaluate in Turkish and explain why and give the percentage of accuracy.
                 """
-            gemini_evaluation = generate_response(gemini_prompt)   
+            gemini_evaluation = self.generate_response(gemini_prompt)   
             print(gemini_evaluation)
             
             print(response)
@@ -281,7 +289,7 @@ class KAPChatbot:
             }}
         """
         try:
-            response = generate_response(prompt)
+            response = self.generate_response(prompt)
             response = self.clean_json(response)
             
             start_idx = response.find('{')
@@ -308,25 +316,9 @@ class KAPChatbot:
             }
 
 
-genai.configure(api_key=config.GOOGLE_API_KEY)
-model = genai.GenerativeModel("gemini-2.0-flash")
 
-def generate_response(user_prompt):
-    time.sleep(2.5)
-    response = model.generate_content(user_prompt)
-    return response.text
-
-def main():
-    while True:
-        user_query = input("\nEnter your query: ")
-        if user_query.lower() == 'q':
-            break
-        full_prompt = base_prompt.format(query=user_query)
-        query = generate_response(full_prompt)
-        print(query)
-        
-        chatbot = KAPChatbot()
-        chatbot.chat(query)
-
-if __name__ == "__main__":
-    main()
+    def generate_response(self, prompt):
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        time.sleep(2.5)
+        response = model.generate_content(prompt)
+        return response.text
