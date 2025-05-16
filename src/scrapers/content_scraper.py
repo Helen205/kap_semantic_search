@@ -71,6 +71,16 @@ class ContentScraper:
                 time = spans[1].get_text(strip=True)
                 history_info = f"Date: {date}, Time: {time}"
         return history_info
+    def extract_code_info(self, row):
+        code_info = ''
+        try:
+            code_cell = row.find('td', class_='px-2 py-1 lg:text-13 text-dark font-normal text-left lg:table-cell hidden max-w-36 min-w-36 break-words')
+            if code_cell:
+                code_info = code_cell.get_text(strip=True)
+            return code_info
+        except Exception as e:
+            logger.error(f"Error extracting code info: {e}")
+            return code_info
 
     def extract_header_info(self, soup):
         header_info = {}
@@ -116,13 +126,15 @@ class ContentScraper:
             title = row.find('td', {'class': 'min-w-30'})
             title = title.text.strip() if title else ''
             
+            code_info = self.extract_code_info(row)
+            
             content = self.get_notification_content(notification_id)
             if not content:
                 return None
                 
             result = {
                 'id': notification_id,
-                'title': title,
+                'title': f"{title} {code_info}".strip(),
                 'header_info': content['header_info'],
                 'content_info': content['content_info'],
                 'history_info': content['history_info']
