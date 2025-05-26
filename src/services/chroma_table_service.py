@@ -17,7 +17,7 @@ class ChromaTableService:
     def __init__(self):        
         self.collection_name = getattr(config, "CHROMA_COLLECTION", "table")
         self.client = ClientWrapper()
-
+        self.LAST_PROCESSED_TABLE = config.LAST_PROCESSED_TABLE_PATH
     def setup_chroma_table(self):
         try:
             logger.info("Chroma connecting...")
@@ -33,14 +33,26 @@ class ChromaTableService:
         except Exception as e:
             logger.error(f"Chroma connection error: {e}")
             raise
+        
+    def save_last_processed_to_table(self, notification_id):
+        try:
+            os.makedirs(os.path.dirname(self.LAST_PROCESSED_TABLE), exist_ok=True)
+            with open(self.LAST_PROCESSED_TABLE, 'w') as f:
+                json.dump({'last_id': notification_id}, f)
+            logger.info(f"Successfully saved last processed ID: {notification_id}")
+        except Exception as e:
+            logger.error(f"Error saving last processed file: {e}")
 
     def _get_excel_files(self):
         excel_files = []
         for root, _, files in os.walk('notification_htmls'):
             for file in files:
-                if file.endswith(('.xlsx', '.xls')):
-                    excel_files.append(os.path.join(root, file))
-        logger.info(f"Found {len(excel_files)} Excel files")
+                if file.endswith(('.xlsx', '.xls')) and '_table_' in file and '_chunk_' in file:
+                    file_path = os.path.join(root, file)
+                    if extract_info_from_filename(file):
+                        excel_files.append(file_path)
+        excel_files.sort(key=lambda x: int(extract_info_from_filename(os.path.basename(x))['notification_id']))
+        logger.info(f"Found {len(excel_files)} valid Excel files")
         return excel_files
 
     def _process_excel_file(self, file_path, collection):
@@ -55,7 +67,7 @@ class ChromaTableService:
             df = pd.read_excel(file_path)
             content = excel_to_json(df)
             
-            table_id = f"{info['notification_id']}_{info['table_num']}_{info['chunk_index']}"
+            table_id = filename.replace('.xlsx', '').replace('.xls', '')
             
             collection.add(
                 documents=[content],
@@ -68,7 +80,6 @@ class ChromaTableService:
                 }],
                 ids=[table_id]
             )
-            
             logger.info(f"Added Excel file {filename} to ChromaDB")
             return True
             
@@ -90,9 +101,19 @@ class ChromaTableService:
             excel_files = self._get_excel_files()
             processed_files = []
             
+            
+            current_notification_id = None
             for file_path in excel_files:
                 if self._process_excel_file(file_path, collection):
                     processed_files.append(file_path)
+                    filename = os.path.basename(file_path)
+                    info = extract_info_from_filename(filename)
+                    if info:
+                        current_notification_id = info['notification_id']
+            
+            if current_notification_id:
+                self.save_last_processed_to_table(current_notification_id)
+                logger.info(f"Saved last processed ID: {current_notification_id}")
             
             logger.info("Successfully saved all Excel files to ChromaDB")
             self._cleanup_processed_files(processed_files)

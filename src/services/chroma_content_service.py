@@ -3,6 +3,7 @@ import logging
 from ..core.client import ClientWrapper
 from ..core.config import config
 import os
+import json
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -12,6 +13,7 @@ class ChromaContentService:
     def __init__(self): 
         self.collection_name = getattr(config, "CHROMA_COLLECTION", "content")
         self.client = ClientWrapper()
+        self.LAST_PROCESSED_CONTENT = config.LAST_PROCESSED_PATH
 
     def setup_chroma_content(self):
         try:
@@ -28,6 +30,14 @@ class ChromaContentService:
         except Exception as e:
             logger.error(f"Chroma connection error: {e}")
             raise
+    def save_last_processed_to_content(self, notification_id):
+        try:
+            os.makedirs(os.path.dirname(self.LAST_PROCESSED_CONTENT), exist_ok=True)
+            with open(self.LAST_PROCESSED_CONTENT, 'w') as f:
+                json.dump({'last_id': notification_id}, f)
+            logger.info(f"Successfully saved last processed ID: {notification_id}")
+        except Exception as e:
+            logger.error(f"Error saving last processed file: {e}")
 
     def _read_csv_file(self, csv_file):
         if not os.path.exists(csv_file):
@@ -64,7 +74,7 @@ class ChromaContentService:
                 metadatas=[metadata],
                 ids=[doc_id]
             )
-            
+            self.save_last_processed_to_content(row['notification_id'])
             logger.info(f"Added document {doc_id} to ChromaDB")
             return True
             
@@ -88,6 +98,8 @@ class ChromaContentService:
 
             collection = self.setup_chroma_content()
             processed_count = 0
+            
+            df = df.sort_values('notification_id')
             
             for _, row in df.iterrows():
                 if self._process_document(row, collection):

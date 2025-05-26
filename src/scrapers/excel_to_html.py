@@ -31,14 +31,6 @@ class ExcelToHtml:
             logger.error(f"Error loading last processed file: {e}")
             return {}
 
-    def save_last_processed_to_table(self, notification_id):
-        try:
-            os.makedirs(os.path.dirname(self.LAST_PROCESSED_TABLE), exist_ok=True)
-            with open(self.LAST_PROCESSED_TABLE, 'w') as f:
-                json.dump({'last_id': notification_id}, f)
-            logger.info(f"Successfully saved last processed ID: {notification_id}")
-        except Exception as e:
-            logger.error(f"Error saving last processed file: {e}")
 
     def create_session(self):
         session = requests.Session()
@@ -96,7 +88,6 @@ class ExcelToHtml:
                 'id': notification_id,
                 'html_content': html_content
             }
-            self.save_last_processed_to_table(notification_id)
             return result
         except Exception as e:
             logger.error(f"Error processing notification: {e}")
@@ -117,7 +108,7 @@ class ExcelToHtml:
         if last_id:
             for i, row in enumerate(notification_rows):
                 checkbox = row.find('input', {'type': 'checkbox'})
-                if checkbox and 'id' in checkbox.attrs and checkbox['id'] == last_id:
+                if checkbox and 'id' in checkbox.attrs and int(checkbox['id']) == last_id:
                     last_id_index = i
                     break
         

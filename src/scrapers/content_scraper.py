@@ -43,14 +43,6 @@ class ContentScraper:
             logger.error(f"Error loading last processed file: {e}")
             return {}
 
-    def save_last_processed(self, notification_id):
-        try:
-            os.makedirs(os.path.dirname(self.last_processed_file), exist_ok=True)
-            with open(self.last_processed_file, 'w') as f:
-                json.dump({'last_id': notification_id}, f)
-            logger.info(f"Successfully saved last processed ID: {notification_id}")
-        except Exception as e:
-            logger.error(f"Error saving last processed file: {e}")
 
     def get_headers(self):
         return {
@@ -139,7 +131,6 @@ class ContentScraper:
                 'content_info': content['content_info'],
                 'history_info': content['history_info']
             }
-            self.save_last_processed(notification_id)
             return result
         except Exception as e:
             logger.error(f"Error processing notification: {e}")
@@ -158,10 +149,11 @@ class ContentScraper:
         if last_id:
             for i, row in enumerate(notification_rows):
                 checkbox = row.find('input', {'type': 'checkbox'})
-                if checkbox and 'id' in checkbox.attrs and checkbox['id'] == last_id:
+                if checkbox and 'id' in checkbox.attrs and int(checkbox['id']) == last_id:
                     last_id_index = i
                     break
         
+
         target_rows = notification_rows[:last_id_index] if last_id_index is not None else notification_rows
         logger.info(f"Processing {len(target_rows)} notifications")
         
