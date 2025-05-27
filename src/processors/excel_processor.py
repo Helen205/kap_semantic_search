@@ -41,6 +41,7 @@ class ExcelProcessor:
     def html_processor(self):
         try:
             html_files = glob.glob('notification_htmls/*.html')
+            html_files.sort(key=lambda x: int(os.path.basename(x).replace('.html', '')))
             return html_files
         except Exception as e:
             logger.error(f"HTML processor error: {e}")
