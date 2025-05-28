@@ -60,8 +60,7 @@ class ClientWrapper:
     def delete_collection(self, name):
         try:
             self.client.delete_collection(
-                name=name,
-                embedding_function=self.embedding_function
+                name=name
             )
             logger.info(f"Created or retrieved collection: {name}")
         except Exception as e:

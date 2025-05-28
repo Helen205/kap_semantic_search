@@ -18,8 +18,8 @@ def process_tables():
 @celery_app.task(name='save_tables_to_chroma')
 def save_tables_to_chroma():
     try:
-        scraper = ExcelToHtml()
-        scraper.chroma_table_service.save_to_chroma_table()
+        scraper = ChromaTableService()
+        scraper.save_to_chroma_table()
         return {"status": "success", "message": "Tables saved to ChromaDB"}
     except Exception as e:
         logger.error(f"Error saving tables to ChromaDB: {e}")

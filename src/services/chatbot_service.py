@@ -129,8 +129,8 @@ class KAPChatbot:
             where=where_clause
         )
 
-    def search_disclosures(self, query, company=None, n_results=5, distance_threshold=0.86, query_type=None):
-        query_analysis = self.analyze_query(query)
+    def search_disclosures(self, response, company=None, n_results=5, distance_threshold=0.86, query_type=None):
+        query_analysis = self.analyze_query(response)
         english_query = self.translate_to_english(query_analysis)
 
         if query_type is None:
@@ -272,24 +272,9 @@ class KAPChatbot:
             import traceback
             traceback.print_exc()
 
-    def analyze_query(self, query):
-        prompt = f"""
-            Analyze the following financial question and the table content provided, and return a structured analysis with the following:
-            1. Type of information sought (numerical value / text / date / etc.)
-            2. Important keywords 
-            3. Required data points or fields from the financial table that must be used in the calculation
-            4. Expected answer format
-            Question: {query}
-            Provide the answer in JSON format:
-            {{
-                "info_type": "numerical value" or "text" or "date" or "other",
-                "keywords": ["key", "words"],
-                "required_operations": ["sum", "subtraction"],
-                "expected_format": "expected answer format"
-            }}
-        """
+    def analyze_query(self, response):
         try:
-            response = self.generate_response(prompt)
+            response = self.generate_response(response)
             response = self.clean_json(response)
             
             start_idx = response.find('{')

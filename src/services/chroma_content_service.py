@@ -30,6 +30,18 @@ class ChromaContentService:
         except Exception as e:
             logger.error(f"Chroma connection error: {e}")
             raise
+    def load_last_processed(self):
+        try:
+            if not os.path.exists(self.LAST_PROCESSED_CONTENT):
+                return None
+                
+            with open(self.LAST_PROCESSED_CONTENT, 'r') as f:
+                data = json.load(f)
+                return data.get('last_id')
+        except Exception as e:
+            logger.error(f"Error loading last processed ID: {e}")
+            return None
+
     def save_last_processed_to_content(self, notification_id):
         try:
             os.makedirs(os.path.dirname(self.LAST_PROCESSED_CONTENT), exist_ok=True)
@@ -74,7 +86,6 @@ class ChromaContentService:
                 metadatas=[metadata],
                 ids=[doc_id]
             )
-            self.save_last_processed_to_content(row['notification_id'])
             logger.info(f"Added document {doc_id} to ChromaDB")
             return True
             
@@ -98,13 +109,16 @@ class ChromaContentService:
 
             collection = self.setup_chroma_content()
             processed_count = 0
-            
-            df = df.sort_values('notification_id')
+            last_notification_id = None
             
             for _, row in df.iterrows():
                 if self._process_document(row, collection):
                     processed_count += 1
+                    last_notification_id = row['notification_id']
             
+            if last_notification_id:
+                self.save_last_processed_to_content(last_notification_id)
+                
             logger.info(f"Successfully processed {processed_count} out of {len(df)} documents")
             self._cleanup_csv_file(csv_file)
             

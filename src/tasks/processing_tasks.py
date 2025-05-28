@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 def process_excel_files():
     try:
         processor = ExcelProcessor()
-        processor.process_excel()
+        processor.process_tables()
         return {"status": "success", "message": "Excel processing completed"}
     except Exception as e:
         logger.error(f"Excel processing error: {e}")

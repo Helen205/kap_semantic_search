@@ -18,8 +18,8 @@ def process_content():
 @celery_app.task(name='save_content_to_chroma')
 def save_content_to_chroma():
     try:
-        scraper = ContentScraper()
-        scraper.chroma_content_service.save_to_chroma_content()
+        scraper = ChromaContentService()
+        scraper.save_to_chroma_content()
         return {"status": "success", "message": "Content saved to ChromaDB"}
     except Exception as e:
         logger.error(f"Error saving content to ChromaDB: {e}")

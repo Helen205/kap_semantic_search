@@ -147,7 +147,7 @@ class ExcelToHtml:
             logger.error("Chrome connection error - skipping last_id update")
             return False
             
-        url = "https://www.kap.org.tr/tr/bildirim-sorgu-sonuc?srcbar=Y&cmp=Y&cat=4&s=4028328c594bfdca01594c0af9aa0057&st=Finansal%20Rapor&kw=bilan%C3%A7o&slf=FR"
+        url = "https://www.kap.org.tr/en/bildirim-sorgu-sonuc?srcbar=Y&cmp=Y&cat=4&s=4028328c594bfdca01594c0af9aa0057&st=Finansal%20Rapor&kw=bilan%C3%A7o&slf=FR"
         
         html_content = self.fetch_html_content(url)
         if not html_content:

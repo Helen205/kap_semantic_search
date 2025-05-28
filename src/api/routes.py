@@ -37,7 +37,7 @@ def _parse_gemini_response(results):
 
 def _process_query(chatbot, search_query, company, query_type, distance, max_results):
     search_results = chatbot.search_disclosures(
-        query=search_query,
+        response=search_query,
         company=company,
         distance_threshold=distance,
         query_type=query_type

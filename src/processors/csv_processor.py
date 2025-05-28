@@ -13,6 +13,11 @@ class CSVProcessor:
 
     def process_csv(self):
         try:
+            processed_file = 'header_content_processed.csv'
+            if os.path.exists(processed_file):
+                logger.info("Found existing processed file. Skipping processing to avoid duplicates.")
+                return
+
             csv_file = 'header_content.csv'
             if not os.path.exists(csv_file):
                 logger.info("No CSV file to process")
@@ -22,11 +27,18 @@ class CSVProcessor:
             if df.empty:
                 logger.info("CSV file is empty")
                 return
+            
+            last_processed_id = self.chroma_service.load_last_processed()
+            
+            if last_processed_id:
+                df = df[df['id'] > last_processed_id]
+                if df.empty:
+                    logger.info("No new notifications to process")
+                    return
 
             all_processed_docs = []
             
             for _, row in df.iterrows():
-
                 title_doc = {
                     'title': row['title'],
                     'content': '',
@@ -38,7 +50,6 @@ class CSVProcessor:
                 }
 
                 content_chunks = split_text_into_sentences(row['content'])
-
                 
                 for i, chunk in enumerate(content_chunks, 1):
                     content_doc = {
@@ -53,17 +64,17 @@ class CSVProcessor:
                     all_processed_docs.append(content_doc)
                 all_processed_docs.append(title_doc)
 
-                if all_processed_docs:
-                    processed_df = pd.DataFrame(all_processed_docs)
-                    processed_df.to_csv('header_content_processed.csv', index=False, encoding='utf-8-sig')
+            if all_processed_docs:
+                processed_df = pd.DataFrame(all_processed_docs)
+                processed_df.to_csv('header_content_processed.csv', index=False, encoding='utf-8-sig')
 
-                    logger.info(f"Processed {len(all_processed_docs)} chunks from {len(df)} notifications")
+                logger.info(f"Processed {len(all_processed_docs)} chunks from {len(df)} notifications")
 
-                    self.chroma_service.save_to_chroma_content()
+                self.chroma_service.save_to_chroma_content()
 
-                    delete_file(csv_file)
-                else:
-                    logger.info("No data to process")
+                delete_file(csv_file)
+            else:
+                logger.info("No data to process")
 
         except Exception as e:
             logger.error(f"Error in process_csv: {e}")
