@@ -71,6 +71,7 @@ class ChromaContentService:
             'is_title': bool(row['is_title']),
             'notification_id': int(row['notification_id']),
             'history': str(row['history']) if pd.notna(row['history']) else '',
+            'period': str(row['period']) if pd.notna(row['period']) else '',
             'chunk_index': int(row['chunk_index']),
             'total_chunks': int(row['total_chunks'])
         }

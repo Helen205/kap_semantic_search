@@ -44,6 +44,7 @@ class CSVProcessor:
                     'content': '',
                     'is_title': True,
                     'history': row['history'],
+                    'period': row['period'],
                     'notification_id': row['id'],
                     'chunk_index': 0,
                     'total_chunks': 0
@@ -58,6 +59,7 @@ class CSVProcessor:
                         'is_title': False,
                         'notification_id': row['id'],
                         'history': row['history'],
+                        'period': row['period'],
                         'chunk_index': i,
                         'total_chunks': len(content_chunks)
                     }

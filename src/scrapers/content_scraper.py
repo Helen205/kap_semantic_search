@@ -60,9 +60,16 @@ class ContentScraper:
             spans = history_div.find_all('span')
             if len(spans) >= 2:
                 date = spans[0].get_text(strip=True)
-                time = spans[1].get_text(strip=True)
-                history_info = f"Date: {date}, Time: {time}"
+                history_info = f"{date}"
         return history_info
+    def extract_period_info(self, soup):
+        period_info = ''
+        period_div = soup.find_all('div', class_='text-15 font-normal leading-4 lg:w-auto w-1/2')
+        if len(period_div) >= 4:
+            period_info = period_div[3].get_text(strip=True)
+        
+        return period_info
+    
     def extract_code_info(self, row):
         code_info = ''
         try:
@@ -100,7 +107,8 @@ class ContentScraper:
             return {
                 'header_info': self.extract_header_info(soup),
                 'content_info': self.extract_content_info(soup),
-                'history_info': self.extract_history_info(soup)
+                'history_info': self.extract_history_info(soup),
+                'period_info': self.extract_period_info(soup)
             }
         except Exception as e:
             logger.error(f"Notification content not found (ID: {notification_id}): {e}")
@@ -129,7 +137,8 @@ class ContentScraper:
                 'title': f"{title} {code_info}".strip(),
                 'header_info': content['header_info'],
                 'content_info': content['content_info'],
-                'history_info': content['history_info']
+                'history_info': content['history_info'],
+                'period_info': content['period_info']
             }
             return result
         except Exception as e:
@@ -174,7 +183,8 @@ class ContentScraper:
             'id': notification['id'],
             'title': notification['title'],
             'content': notification['content_info'],
-            'history': notification['history_info']
+            'history': notification['history_info'],
+            'period': notification['period_info']
         } for notification in notifications]
         
         header_content_df = pd.DataFrame(header_content_data)
