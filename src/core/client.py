@@ -78,3 +78,6 @@ class RedisClient:
         except Exception as e:
             logger.error(f"Error connecting to Redis: {e}")
             raise
+if __name__ == "__main__":
+    client= ClientWrapper()
+    client.delete_collection('content')
