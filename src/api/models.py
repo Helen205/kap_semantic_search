@@ -7,6 +7,7 @@ class Query(BaseModel):
     distance: Optional[float] = 0.86
     start_date: str
     end_date: str
+    period: str
 
 class CompanySearch(BaseModel):
     company: str

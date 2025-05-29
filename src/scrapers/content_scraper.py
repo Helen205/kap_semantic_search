@@ -183,7 +183,7 @@ class ContentScraper:
             'id': notification['id'],
             'title': notification['title'],
             'content': notification['content_info'],
-            'history': notification['history_info'],
+            'history': pd.to_datetime(notification['history_info'], format='%d.%m.%Y').strftime('%Y-%m-%d'),
             'period': notification['period_info']
         } for notification in notifications]
         
