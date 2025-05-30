@@ -35,15 +35,19 @@ def _parse_gemini_response(results):
     except json.JSONDecodeError:
         return None, None, results, None
 
-def _process_query(chatbot, search_query, company, query_type, distance, max_results):
+def _process_query(chatbot, search_query, company, query_type, distance, max_results, start_date, end_date, period):
     search_results = chatbot.search_disclosures(
         response=search_query,
         company=company,
         distance_threshold=distance,
-        query_type=query_type
-    )
-    
+        query_type=query_type,
+        start_date=start_date,
+        end_date=end_date,
+        period=period
+        )
+        
     return chatbot.format_response(results=search_results, query=search_query, limit=max_results)
+
 
 @app.post("/query", response_model=Response)
 async def query_kap(query: Query):
@@ -55,13 +59,17 @@ async def query_kap(query: Query):
         results = chatbot.generate_response(full_prompt)
         
         query_data, company, search_query, query_type = _parse_gemini_response(results)
+        
         formatted_response = _process_query(
             chatbot=chatbot,
             search_query=search_query,
             company=company,
             query_type=query_type,
             distance=query.distance,
-            max_results=query.max_results
+            max_results=query.max_results,
+            start_date=query.start_date,
+            end_date=query.end_date,
+            period=query.period
         )
         
         return Response(
@@ -71,7 +79,10 @@ async def query_kap(query: Query):
         
     except Exception as e:
         logger.error(f"Error processing query: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return Response(
+            question={"query": query.question},
+            answers={"disclosures": []}
+        )
 
 @app.post("/company_search", response_model=CompanySearchResponse)
 async def company_search(query: CompanySearch):

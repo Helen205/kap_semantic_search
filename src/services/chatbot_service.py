@@ -8,6 +8,7 @@ from ..core.client import ClientWrapper
 from deep_translator import GoogleTranslator
 import time
 import json
+import pandas as pd
 
 
 logger = logging.getLogger(__name__)
@@ -129,7 +130,56 @@ class KAPChatbot:
             where=where_clause
         )
 
-    def search_disclosures(self, response, company=None, n_results=5, distance_threshold=0.86, query_type=None):
+
+    def _date_range(self, start_date, end_date, notification_ids):
+        where_clause = {"notification_id": {"$in": notification_ids}} if notification_ids else {}
+        results = self.content_collection.query(
+            query_texts=[""],
+            n_results=len(notification_ids),
+            where=where_clause
+        )
+        
+        filtered_results = {
+            'documents': [],
+            'metadatas': [],
+            'distances': []
+        }
+        
+        for i, metadata in enumerate(results['metadatas'][0]):
+            history_date = metadata.get('history')
+            if history_date and start_date <= history_date <= end_date:
+                filtered_results['documents'].append(results['documents'][0][i])
+                filtered_results['metadatas'].append(metadata)
+                filtered_results['distances'].append(results['distances'][0][i])
+        
+        return filtered_results
+
+    def _period_range(self, period, notification_ids):
+        where_clause = {"notification_id": {"$in": notification_ids}} if notification_ids else {}
+        results = self.content_collection.query(
+            query_texts=[""],
+            n_results=len(notification_ids),
+            where=where_clause
+        )
+        
+        if not results or not results.get('metadatas'):
+            return None
+            
+        filtered_results = {
+            'documents': [],
+            'metadatas': [],
+            'distances': []
+        }
+        
+        for i, metadata in enumerate(results['metadatas'][0]):
+            if metadata.get('period') == period:
+                filtered_results['documents'].append(results['documents'][0][i])
+                filtered_results['metadatas'].append(metadata)
+                filtered_results['distances'].append(results['distances'][0][i])
+        
+        return filtered_results
+
+    def search_disclosures(self, response, company=None, n_results=5, distance_threshold=0.86, query_type=None, start_date=None, end_date=None, period=None):
         query_analysis = self.analyze_query(response)
         english_query = self.translate_to_english(query_analysis)
 
@@ -150,29 +200,67 @@ class KAPChatbot:
             )
             
             filtered_companies, notification_ids = self._filter_company_results(company_results, distance_threshold)
+            logger.info(f"Company search found notification_ids: {notification_ids}")
             
-            if not filtered_companies:
+            if not notification_ids:
+                logger.warning("No matching companies found")
                 return {
                     'documents': [],
                     'metadatas': [],
                     'distances': [],
                     'total_results': 0
                 }
-            
+
+        if start_date and end_date and notification_ids:
+            date_filtered = self._date_range(start_date, end_date, notification_ids)
+            if date_filtered and date_filtered.get('metadatas') and len(date_filtered['metadatas']) > 0:
+                notification_ids = [meta.get('notification_id') for meta in date_filtered['metadatas']]
+                logger.info(f"Date filtering found notification_ids: {notification_ids}")
+            else:
+                logger.warning("No results found for the specified date range")
+                return {
+                    'documents': [],
+                    'metadatas': [],
+                    'distances': [],
+                    'total_results': 0
+                }
+
+        if period and notification_ids:
+            period_filtered = self._period_range(period, notification_ids)
+            if period_filtered and period_filtered.get('metadatas') and len(period_filtered['metadatas']) > 0:
+                notification_ids = [meta.get('notification_id') for meta in period_filtered['metadatas']]
+                logger.info(f"Period filtering found notification_ids: {notification_ids}")
+            else:
+                logger.warning("No results found for the specified period")
+                return {
+                    'documents': [],
+                    'metadatas': [],
+                    'distances': [],
+                    'total_results': 0
+                }
+
+
+        if notification_ids:
+            logger.info(f"Final notification_ids before query: {notification_ids}")
             if is_financial:
                 query_results = self._get_table_results(english_query, notification_ids, n_results)
-                query_results = self._get_titles_for_notifications(notification_ids, query_results)
+                if query_results and query_results.get('metadatas') and len(query_results['metadatas']) > 0:
+                    query_results = self._get_titles_for_notifications(notification_ids, query_results)
             elif is_general:
                 query_results = self._get_content_results(english_query, notification_ids, n_results)
         else:
+            logger.warning("No notification_ids available for final query")
             if is_financial:
                 query_results = self._get_table_results(english_query, None, n_results)
-                notification_ids = [meta.get('notification_id') for meta in query_results['metadatas'][0]]
-                query_results = self._get_titles_for_notifications(notification_ids, query_results)
+                if query_results and query_results.get('metadatas') and len(query_results['metadatas']) > 0:
+                    query_results = self._get_titles_for_notifications(
+                        [meta.get('notification_id') for meta in query_results['metadatas']],
+                        query_results
+                    )
             elif is_general:
                 query_results = self._get_content_results(english_query, None, n_results)
         
-        if query_results is None:
+        if query_results is None or not query_results.get('metadatas') or len(query_results['metadatas']) == 0:
             return {
                 'documents': [],
                 'metadatas': [],
@@ -183,49 +271,69 @@ class KAPChatbot:
         return query_results
 
     def format_response(self, results, query, limit=3):
-        if not results['documents']:
+        if not results or not isinstance(results, dict):
+            return {"error": "Invalid results format."}
+
+        if not results.get('documents') or not results.get('metadatas'):
+            return {"error": "Missing required fields in results."}
+
+        if not results['documents'] or not results['metadatas']:
             return {"error": "No disclosures found for this topic."}
 
         response_data = {
             "disclosures": []
         }
         
-        if isinstance(results['documents'], list) and len(results['documents']) > 0 and isinstance(results['documents'][0], list):
-            documents = results['documents'][0]
-            metadatas = results['metadatas'][0]
-        else:
-            documents = results['documents']
-            metadatas = results['metadatas']
+        try:
+            if isinstance(results['documents'], list):
+                if len(results['documents']) > 0 and isinstance(results['documents'][0], list):
+                    documents = results['documents'][0]
+                    metadatas = results['metadatas'][0] if len(results['metadatas']) > 0 else []
+                else:
+                    documents = results['documents']
+                    metadatas = results['metadatas']
+            else:
+                documents = []
+                metadatas = []
 
-        for i, (doc, metadata) in enumerate(zip(documents, metadatas)):
-            if i >= limit:
-                break
-            try:
-                doc = str(doc) if doc else ''
-                title = str(metadata.get('title', ''))
-                
-                if doc.strip() == title.strip():
-                    continue
+            if len(documents) != len(metadatas):
+                logger.warning(f"Mismatched lengths: documents={len(documents)}, metadatas={len(metadatas)}")
+                return {"error": "Data format mismatch."}
+
+            for i, (doc, metadata) in enumerate(zip(documents, metadatas)):
+                if i >= limit:
+                    break
+                try:
+                    doc = str(doc) if doc else ''
+                    title = str(metadata.get('title', ''))
                     
-                notification_id = str(metadata.get('notification_id', ''))
-                table_num = str(metadata.get('table_num', ''))
-                chunk_index = str(metadata.get('chunk_index', ''))
-                
-                disclosure = {
-                    "title": title,
-                    "notification_id": notification_id,
-                    "table_number": table_num if table_num else None,
-                    "chunk_index": chunk_index if chunk_index else None,
-                    "content": doc
-                }
-                
-                response_data["disclosures"].append(disclosure)
+                    if doc.strip() == title.strip():
+                        continue
+                        
+                    notification_id = str(metadata.get('notification_id', ''))
+                    table_num = str(metadata.get('table_num', ''))
+                    chunk_index = str(metadata.get('chunk_index', ''))
+                    
+                    disclosure = {
+                        "title": title,
+                        "notification_id": notification_id,
+                        "table_number": table_num if table_num else None,
+                        "chunk_index": chunk_index if chunk_index else None,
+                        "content": doc
+                    }
+                    
+                    response_data["disclosures"].append(disclosure)
 
-            except Exception as e:
-                print(f"Error formatting response for document {i}: {str(e)}")
-                continue
+                except Exception as e:
+                    logger.error(f"Error formatting response for document {i}: {str(e)}")
+                    continue
 
-        return response_data
+            return response_data
+            
+        except Exception as e:
+            logger.error(f"Error in format_response: {str(e)}")
+            return {"error": "Error formatting response."}
+
     def clean_json(self, json_str):
         json_str = json_str.strip()
         if json_str.startswith('```json'):
@@ -277,30 +385,42 @@ class KAPChatbot:
             response = self.generate_response(response)
             response = self.clean_json(response)
             
-            start_idx = response.find('{')
-            end_idx = response.rfind('}')
-            if start_idx != -1 and end_idx != -1:
-                json_str = response[start_idx:end_idx+1]
-                analysis = json.loads(json_str)
-            else:
-                raise ValueError("No valid JSON found in response")
+            try:
+                analysis = json.loads(response)
+            except json.JSONDecodeError:
+                start_idx = response.find('{')
+                end_idx = response.rfind('}')
+                
+                if start_idx != -1 and end_idx != -1:
+                    json_str = response[start_idx:end_idx+1]
+                    try:
+                        analysis = json.loads(json_str)
+                    except json.JSONDecodeError:
+                        logger.error(f"Could not parse JSON from extracted string: {json_str}")
+                        raise ValueError("Invalid JSON format in extracted string")
+                else:
+                    logger.error(f"No JSON object found in response: {response}")
+                    raise ValueError("No JSON object found in response")
             
             analysis['info_type'] = analysis.get('info_type', 'text')
             analysis['keywords'] = analysis.get('keywords', [])
             analysis['required_operations'] = analysis.get('required_operations', [])
             analysis['expected_format'] = analysis.get('expected_format', 'text')
+            analysis['query_type'] = analysis.get('query_type', 'general KAP statement')
             
+            logger.info(f"Successfully analyzed query: {analysis}")
             return analysis
+            
         except Exception as e:
-            print(f"Error in analyze_query: {str(e)}")
+            logger.error(f"Error in analyze_query: {str(e)}")
+            logger.error(f"Raw response: {response}")
             return {
                 'info_type': 'text',
                 'keywords': [],
                 'required_operations': [],
-                'expected_format': 'text'
+                'expected_format': 'text',
+                'query_type': 'general KAP statement'
             }
-
-
 
     def generate_response(self, prompt):
         model = genai.GenerativeModel('gemini-2.0-flash')

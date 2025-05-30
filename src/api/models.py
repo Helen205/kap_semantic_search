@@ -5,9 +5,9 @@ class Query(BaseModel):
     question: str
     max_results: Optional[int] = 3
     distance: Optional[float] = 0.86
-    start_date: str
-    end_date: str
-    period: str
+    start_date:  Optional[str] = "2025-01-01"
+    end_date: Optional[str] = "2025-05-01"
+    period: Optional[str] = "3 Aylık"
 
 class CompanySearch(BaseModel):
     company: str
