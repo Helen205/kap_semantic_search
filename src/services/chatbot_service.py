@@ -8,7 +8,7 @@ from ..core.client import ClientWrapper
 from deep_translator import GoogleTranslator
 import time
 import json
-import pandas as pd
+from ..core.prompts import prompt as prompt_template
 
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ class KAPChatbot:
                 print(f"{i+1}. Title: {meta.get('title')}")
                 print(f"   Distance: {distance:.2f}")
                 count += 1
-                if count == 2:
+                if count == 3:
                     break
             else:
                 filtered_companies.append(meta)
@@ -86,7 +86,7 @@ class KAPChatbot:
                 print(f"   Title: {meta.get('title')}")
                 print(f"   Distance: {distance:.2f}")
                 count += 1
-                if count == 2:
+                if count == 3:
                     break
                     
         return filtered_companies, filtered_ids
@@ -402,10 +402,8 @@ class KAPChatbot:
                     logger.error(f"No JSON object found in response: {response}")
                     raise ValueError("No JSON object found in response")
             
-            analysis['info_type'] = analysis.get('info_type', 'text')
             analysis['keywords'] = analysis.get('keywords', [])
             analysis['required_operations'] = analysis.get('required_operations', [])
-            analysis['expected_format'] = analysis.get('expected_format', 'text')
             analysis['query_type'] = analysis.get('query_type', 'general KAP statement')
             
             logger.info(f"Successfully analyzed query: {analysis}")
@@ -415,15 +413,14 @@ class KAPChatbot:
             logger.error(f"Error in analyze_query: {str(e)}")
             logger.error(f"Raw response: {response}")
             return {
-                'info_type': 'text',
                 'keywords': [],
                 'required_operations': [],
-                'expected_format': 'text',
                 'query_type': 'general KAP statement'
             }
 
     def generate_response(self, prompt):
         model = genai.GenerativeModel('gemini-2.0-flash')
         time.sleep(2.5)
-        response = model.generate_content(prompt)
+        formatted_prompt = prompt_template.format(query=prompt)     
+        response = model.generate_content(formatted_prompt)
         return response.text
