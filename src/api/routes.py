@@ -89,7 +89,7 @@ async def company_search(query: CompanySearch):
     try:
         chatbot = KAPChatbot()
         search_results = chatbot.company_search(company=query.company)
-        formatted_response = chatbot.format_response(search_results, query=query.company)
+        formatted_response = chatbot.format_response_company(search_results, query=query.company)
         
         return CompanySearchResponse(
             question=query.company,
