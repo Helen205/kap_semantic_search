@@ -273,53 +273,45 @@ class KAPChatbot:
         if not results or not isinstance(results, dict):
             return {"error": "Invalid results format."}
 
-        if not results.get('documents') or not results.get('metadatas'):
+        if not results.get('metadatas'):
             return {"error": "Missing required fields in results."}
 
-        if not results['documents'] or not results['metadatas']:
+        if not results['metadatas']:
             return {"error": "No disclosures found for this topic."}
 
         response_data = {
             "disclosures": []
         }
-        
+
         try:
-            if isinstance(results['documents'], list):
-                if len(results['documents']) > 0 and isinstance(results['documents'][0], list):
-                    documents = results['documents'][0]
-                    metadatas = results['metadatas'][0] if len(results['metadatas']) > 0 else []
+            if isinstance(results['metadatas'], list):
+                if len(results['metadatas']) > 0 and isinstance(results['metadatas'][0], list):
+                    metadatas = results['metadatas'][0]
                 else:
-                    documents = results['documents']
                     metadatas = results['metadatas']
             else:
-                documents = []
                 metadatas = []
 
-            if len(documents) != len(metadatas):
-                logger.warning(f"Mismatched lengths: documents={len(documents)}, metadatas={len(metadatas)}")
-                return {"error": "Data format mismatch."}
-
-            for i, (doc, metadata) in enumerate(zip(documents, metadatas)):
+            for i, metadata in enumerate(metadatas):
                 if i >= limit:
                     break
                 try:
                     title = str(metadata.get('title', ''))
-                        
                     notification_id = str(metadata.get('notification_id', ''))
-                    
+
                     disclosure = {
                         "title": title,
                         "notification_id": notification_id
                     }
-                    
+
                     response_data["disclosures"].append(disclosure)
 
                 except Exception as e:
-                    logger.error(f"Error formatting response for document {i}: {str(e)}")
+                    logger.error(f"Error formatting response for metadata {i}: {str(e)}")
                     continue
 
             return response_data
-            
+
         except Exception as e:
             logger.error(f"Error in format_response: {str(e)}")
             return {"error": "Error formatting response."}
