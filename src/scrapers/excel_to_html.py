@@ -24,13 +24,8 @@ class ExcelToHtml:
         if not os.path.exists(self.LAST_PROCESSED_TABLE):
             return {}
         
-        try:
-            with open(self.LAST_PROCESSED_TABLE, 'r') as f:
-                return json.load(f)
-        except Exception as e:
-            logger.error(f"Error loading last processed file: {e}")
-            return {}
-
+        with open(self.LAST_PROCESSED_TABLE, 'r') as f:
+            return json.load(f)
 
     def create_session(self):
         session = requests.Session()
@@ -55,43 +50,37 @@ class ExcelToHtml:
     def get_notification_content(self, notification_id):
         url = f"https://www.kap.org.tr/en/api/notification/export/excel/{notification_id}"
         
-        try:
-            session = self.create_session()
-            response = session.get(url, headers=self.get_headers(), stream=True, timeout=30)
-            response.raise_for_status()
 
-            os.makedirs('notification_htmls', exist_ok=True)
-            with open(f'notification_htmls/{notification_id}.html', 'w', encoding='utf-8') as f:
-                f.write(response.text)
-            logger.info(f"HTML content saved for notification {notification_id}")
+        session = self.create_session()
+        response = session.get(url, headers=self.get_headers(), stream=True, timeout=30)
+        response.raise_for_status()
+
+        os.makedirs('notification_htmls', exist_ok=True)
+        with open(f'notification_htmls/{notification_id}.html', 'w', encoding='utf-8') as f:
+            f.write(response.text)
+        logger.info(f"HTML content saved for notification {notification_id}")
             
-            return response.text
-        except Exception as e:
-            logger.error(f"Notification content not fetched (ID: {notification_id}): {e}")
-            return None
+        return response.text
 
     def process_notification_row(self, row):
-        try:
-            checkbox = row.find('input', {'type': 'checkbox'})
-            if not checkbox or 'id' not in checkbox.attrs:
-                return None
-                
-            notification_id = checkbox['id']
-            logger.info(f"Processing notification ID: {notification_id}")
-            
-            html_content = self.get_notification_content(notification_id)
-            if not html_content:
-                return None
-                
-            time.sleep(0.5)   
-            result = {
-                'id': notification_id,
-                'html_content': html_content
-            }
-            return result
-        except Exception as e:
-            logger.error(f"Error processing notification: {e}")
+        checkbox = row.find('input', {'type': 'checkbox'})
+        if not checkbox or 'id' not in checkbox.attrs:
             return None
+                
+        notification_id = checkbox['id']
+        logger.info(f"Processing notification ID: {notification_id}")
+            
+        html_content = self.get_notification_content(notification_id)
+        if not html_content:
+            return None
+                
+        time.sleep(0.5)   
+        result = {
+            'id': notification_id,
+            'html_content': html_content
+        }
+        return result
+
 
     def parse_notifications(self, html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -124,14 +113,11 @@ class ExcelToHtml:
         return notifications
 
     def fetch_html_content(self, url):
-        try:
-            logger.info(f"URL is being accessed: {url}")
-            response = requests.get(url, headers=self.get_headers())
-            response.raise_for_status()
-            return response.text
-        except requests.RequestException as e:
-            logger.error(f"URL connection error: {e}")
-            return None
+        logger.info(f"URL is being accessed: {url}")
+        response = requests.get(url, headers=self.get_headers())
+        response.raise_for_status()
+        return response.text
+
 
     def chroma_connection_error(self):
         try:

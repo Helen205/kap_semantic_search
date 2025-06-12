@@ -48,15 +48,11 @@ class ExcelProcessor:
             return []
 
     def get_data_from_html(self, html_file):
-        try:
-            if not os.path.exists(html_file):
-                logger.error(f"HTML file not found: {html_file}")
-                return None
-            with open(html_file, 'r', encoding='utf-8') as file:
-                return file.read()
-        except Exception as e:
-            logger.error(f"HTML file reading error: {e}")
+        if not os.path.exists(html_file):
+            logger.error(f"HTML file not found: {html_file}")
             return None
+        with open(html_file, 'r', encoding='utf-8') as file:
+            return file.read()
 
     def is_complex_table(self, table):
         for row in table.find_all('tr'):
@@ -200,43 +196,40 @@ class ExcelProcessor:
             logger.error(f"HTML content is empty: {notification_id}")
             return
             
-        try:
-            soup = BeautifulSoup(html, 'html.parser')
-            tables = soup.find_all('table')
-            table_count = 0
-            current_table_data = []
-            
-            for table in tables:
-                if self.is_complex_table(table):
-                    logger.info(f"Complex table.")
-                    continue
+        soup = BeautifulSoup(html, 'html.parser')
+        tables = soup.find_all('table')
+        table_count = 0
+        current_table_data = []
+        
+        for table in tables:
+            if self.is_complex_table(table):
+                logger.info(f"Complex table.")
+                continue
                     
-                if 'financial-header-table' in table.get('class', []) and current_table_data:
-                    self.process_table_data(current_table_data, notification_id, table_count)
-                    table_count += 1
-                    current_table_data = []
-                
-                table_data = []
-                rows = table.find_all('tr')
-                
-                for row in rows:
-                    cols = []
-                    for cell in row.find_all(['td', 'th']):
-                        if cell.find('div', class_='taxonomy-footnote-value'):
-                            continue
-                            
-                        span = cell.find('span')
-                        cell_text = span.get_text(strip=True) if span else cell.get_text(strip=True)
-                        cols.append(cell_text or "")
-                    
-                    if cols:
-                        table_data.append(cols)
-                
-                if table_data:
-                    current_table_data.extend(table_data)
-            
-            if current_table_data:
+            if 'financial-header-table' in table.get('class', []) and current_table_data:
                 self.process_table_data(current_table_data, notification_id, table_count)
+                table_count += 1
+                current_table_data = []
                 
-        except Exception as e:
-            logger.error(f"Table data extraction error: {e}")
+            table_data = []
+            rows = table.find_all('tr')
+                
+            for row in rows:
+                cols = []
+                for cell in row.find_all(['td', 'th']):
+                    if cell.find('div', class_='taxonomy-footnote-value'):
+                        continue
+                            
+                    span = cell.find('span')
+                    cell_text = span.get_text(strip=True) if span else cell.get_text(strip=True)
+                    cols.append(cell_text or "")
+                    
+                if cols:
+                    table_data.append(cols)
+                
+            if table_data:
+                current_table_data.extend(table_data)
+            
+        if current_table_data:
+            self.process_table_data(current_table_data, notification_id, table_count)
+                

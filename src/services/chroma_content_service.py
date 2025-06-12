@@ -31,39 +31,27 @@ class ChromaContentService:
             logger.error(f"Chroma connection error: {e}")
             raise
     def load_last_processed(self):
-        try:
-            if not os.path.exists(self.LAST_PROCESSED_CONTENT):
-                return None
-                
-            with open(self.LAST_PROCESSED_CONTENT, 'r') as f:
-                data = json.load(f)
-                last_id = data.get('last_id')
-                return int(last_id) if last_id is not None else None
-        except Exception as e:
-            logger.error(f"Error loading last processed ID: {e}")
+        if not os.path.exists(self.LAST_PROCESSED_CONTENT):
             return None
+            
+        with open(self.LAST_PROCESSED_CONTENT, 'r') as f:
+            data = json.load(f)
+            last_id = data.get('last_id')
+            return int(last_id) if last_id is not None else None
 
     def save_last_processed_to_content(self, notification_id):
-        try:
-            os.makedirs(os.path.dirname(self.LAST_PROCESSED_CONTENT), exist_ok=True)
-            with open(self.LAST_PROCESSED_CONTENT, 'w') as f:
-                json.dump({'last_id': int(notification_id)}, f)
-            logger.info(f"Successfully saved last processed ID: {notification_id}")
-        except Exception as e:
-            logger.error(f"Error saving last processed file: {e}")
+        os.makedirs(os.path.dirname(self.LAST_PROCESSED_CONTENT), exist_ok=True)
+        with open(self.LAST_PROCESSED_CONTENT, 'w') as f:
+            json.dump({'last_id': int(notification_id)}, f)
+        logger.info(f"Successfully saved last processed ID: {notification_id}")
 
     def _read_csv_file(self, csv_file):
         if not os.path.exists(csv_file):
             logger.error(f"CSV file {csv_file} not found")
             return None
-            
-        try:
-            df = pd.read_csv(csv_file)
-            logger.info(f"Read {len(df)} records from CSV")
-            return df
-        except Exception as e:
-            logger.error(f"Error reading CSV file: {e}")
-            return None
+        df = pd.read_csv(csv_file)
+        logger.info(f"Read {len(df)} records from CSV")
+        return df
 
     def _create_metadata(self, row):
         return {
@@ -78,29 +66,23 @@ class ChromaContentService:
         }
 
     def _process_document(self, row, collection):
-        try:
-            doc_id = f"{row['notification_id']}_{row['chunk_index']}"
-            document_text = row['title'] if row['is_title'] else row['content']
-            metadata = self._create_metadata(row)
-            
-            collection.add(
-                documents=[document_text],
-                metadatas=[metadata],
-                ids=[doc_id]
-            )
-            logger.info(f"Added document {doc_id} to ChromaDB")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error processing document {row.get('notification_id', 'unknown')}: {e}")
-            return False
+        doc_id = f"{row['notification_id']}_{row['chunk_index']}"
+        document_text = row['title'] if row['is_title'] else row['content']
+        metadata = self._create_metadata(row)
+        
+        collection.add(
+            documents=[document_text],
+            metadatas=[metadata],
+            ids=[doc_id]
+        )
+        logger.info(f"Added document {doc_id} to ChromaDB")
+        return True
+
 
     def _cleanup_csv_file(self, csv_file):
-        try:
-            os.remove(csv_file)
-            logger.info(f"Deleted source CSV file: {csv_file}")
-        except Exception as e:
-            logger.error(f"Error deleting CSV file: {e}")
+        os.remove(csv_file)
+        logger.info(f"Deleted source CSV file: {csv_file}")
+
 
     def save_to_chroma_content(self):
         try:

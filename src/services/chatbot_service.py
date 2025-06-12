@@ -92,27 +92,23 @@ class KAPChatbot:
         return filtered_companies, filtered_ids
 
     def _get_titles_for_notifications(self, notification_ids, query_results):
-        try:
-            content_results = self.content_collection.query(
-                query_texts=[""],
-                n_results=len(notification_ids),
-                where={"notification_id": {"$in": notification_ids}}
-            )
+        content_results = self.content_collection.query(
+            query_texts=[""],
+            n_results=len(notification_ids),
+            where={"notification_id": {"$in": notification_ids}}
+        )
             
-            title_map = {}
-            for meta in content_results['metadatas'][0]:
-                if meta.get('is_title', False):
-                    title_map[meta.get('notification_id')] = meta.get('title')
+        title_map = {}
+        for meta in content_results['metadatas'][0]:
+            if meta.get('is_title', False):
+                title_map[meta.get('notification_id')] = meta.get('title')
             
-            for i, meta in enumerate(query_results['metadatas'][0]):
-                notif_id = meta.get('notification_id')
-                if notif_id in title_map:
-                    meta['title'] = title_map[notif_id]
+        for i, meta in enumerate(query_results['metadatas'][0]):
+            notif_id = meta.get('notification_id')
+            if notif_id in title_map:
+                meta['title'] = title_map[notif_id]
             
-            return query_results
-        except Exception as e:
-            print(f"Error getting titles: {str(e)}")
-            return query_results
+        return query_results
 
     def _get_table_results(self, english_query, notification_ids, n_results):
         where_clause = {"notification_id": {"$in": notification_ids}} if notification_ids else {}
@@ -283,38 +279,27 @@ class KAPChatbot:
             "disclosures": []
         }
 
-        try:
-            if isinstance(results['metadatas'], list):
-                if len(results['metadatas']) > 0 and isinstance(results['metadatas'][0], list):
-                    metadatas = results['metadatas'][0]
-                else:
-                    metadatas = results['metadatas']
+        if isinstance(results['metadatas'], list):
+            if len(results['metadatas']) > 0 and isinstance(results['metadatas'][0], list):
+                metadatas = results['metadatas'][0]
             else:
-                metadatas = []
+                metadatas = results['metadatas']
+        else:
+            metadatas = []
 
-            for i, metadata in enumerate(metadatas):
-                if i >= limit:
-                    break
-                try:
-                    title = str(metadata.get('title', ''))
-                    notification_id = str(metadata.get('notification_id', ''))
+        for i, metadata in enumerate(metadatas):
+            if i >= limit:
+                break
+            title = str(metadata.get('title', ''))
+            notification_id = str(metadata.get('notification_id', ''))
+            disclosure = {
+                "title": title,
+                "notification_id": notification_id
+                }
 
-                    disclosure = {
-                        "title": title,
-                        "notification_id": notification_id
-                    }
+            response_data["disclosures"].append(disclosure)
 
-                    response_data["disclosures"].append(disclosure)
-
-                except Exception as e:
-                    logger.error(f"Error formatting response for metadata {i}: {str(e)}")
-                    continue
-
-            return response_data
-
-        except Exception as e:
-            logger.error(f"Error in format_response: {str(e)}")
-            return {"error": "Error formatting response."}
+        return response_data
 
     def format_response(self, results, query, limit=3):
         if not results or not isinstance(results, dict):
@@ -427,42 +412,30 @@ class KAPChatbot:
             traceback.print_exc()
 
     def analyze_query(self, response):
+        response = self.generate_response(response)
+        response = self.clean_json(response)
+            
         try:
-            response = self.generate_response(response)
-            response = self.clean_json(response)
-            
-            try:
-                analysis = json.loads(response)
-            except json.JSONDecodeError:
-                start_idx = response.find('{')
-                end_idx = response.rfind('}')
+            analysis = json.loads(response)
+        except json.JSONDecodeError:
+            start_idx = response.find('{')
+            end_idx = response.rfind('}')
                 
-                if start_idx != -1 and end_idx != -1:
-                    json_str = response[start_idx:end_idx+1]
-                    try:
-                        analysis = json.loads(json_str)
-                    except json.JSONDecodeError:
-                        logger.error(f"Could not parse JSON from extracted string: {json_str}")
-                        raise ValueError("Invalid JSON format in extracted string")
-                else:
-                    logger.error(f"No JSON object found in response: {response}")
-                    raise ValueError("No JSON object found in response")
+            if start_idx != -1 and end_idx != -1:
+                json_str = response[start_idx:end_idx+1]
+                try:
+                    analysis = json.loads(json_str)
+                except json.JSONDecodeError:
+                    logger.error(f"Could not parse JSON from extracted string: {json_str}")
+                    raise ValueError("Invalid JSON format in extracted string")
             
-            analysis['keywords'] = analysis.get('keywords', [])
-            analysis['required_operations'] = analysis.get('required_operations', [])
-            analysis['query_type'] = analysis.get('query_type', 'general KAP statement')
+        analysis['keywords'] = analysis.get('keywords', [])
+        analysis['required_operations'] = analysis.get('required_operations', [])
+        analysis['query_type'] = analysis.get('query_type', 'general KAP statement')
             
-            logger.info(f"Successfully analyzed query: {analysis}")
-            return analysis
+        logger.info(f"Successfully analyzed query: {analysis}")
+        return analysis
             
-        except Exception as e:
-            logger.error(f"Error in analyze_query: {str(e)}")
-            logger.error(f"Raw response: {response}")
-            return {
-                'keywords': [],
-                'required_operations': [],
-                'query_type': 'general KAP statement'
-            }
 
     def generate_response(self, prompt):
         model = genai.GenerativeModel('gemini-2.0-flash')

@@ -35,13 +35,10 @@ class ChromaTableService:
             raise
         
     def save_last_processed_to_table(self, notification_id):
-        try:
-            os.makedirs(os.path.dirname(self.LAST_PROCESSED_TABLE), exist_ok=True)
-            with open(self.LAST_PROCESSED_TABLE, 'w') as f:
-                json.dump({'last_id': notification_id}, f)
-            logger.info(f"Successfully saved last processed ID: {notification_id}")
-        except Exception as e:
-            logger.error(f"Error saving last processed file: {e}")
+        os.makedirs(os.path.dirname(self.LAST_PROCESSED_TABLE), exist_ok=True)
+        with open(self.LAST_PROCESSED_TABLE, 'w') as f:
+            json.dump({'last_id': notification_id}, f)
+        logger.info(f"Successfully saved last processed ID: {notification_id}")
 
     def _get_excel_files(self):
         excel_files = []
@@ -136,14 +133,5 @@ def extract_info_from_filename(filename):
 def excel_to_json(df):
     records = df.to_dict(orient='records')
     return json.dumps(records, ensure_ascii=False)
-
-def run_next_script_content():
-    try:
-        logger.info("Starting content_scraper.py")
-        subprocess.run(['python', 'content_scraper.py'], check=True)
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Error running content_scraper.py: {e}")
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
 
 

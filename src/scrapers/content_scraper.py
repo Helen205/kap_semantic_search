@@ -72,14 +72,10 @@ class ContentScraper:
     
     def extract_code_info(self, row):
         code_info = ''
-        try:
-            code_cell = row.find('td', class_='px-2 py-1 lg:text-13 text-dark font-normal text-left lg:table-cell hidden max-w-36 min-w-36 break-words')
-            if code_cell:
-                code_info = code_cell.get_text(strip=True)
-            return code_info
-        except Exception as e:
-            logger.error(f"Error extracting code info: {e}")
-            return code_info
+        code_cell = row.find('td', class_='px-2 py-1 lg:text-13 text-dark font-normal text-left lg:table-cell hidden max-w-36 min-w-36 break-words')
+        if code_cell:
+            code_info = code_cell.get_text(strip=True)
+        return code_info
 
     def extract_header_info(self, soup):
         header_info = {}
@@ -115,35 +111,31 @@ class ContentScraper:
             return None
 
     def process_notification_row(self, row):
-        try:
-            checkbox = row.find('input', {'type': 'checkbox'})
-            if not checkbox or 'id' not in checkbox.attrs:
-                return None
-                
-            notification_id = checkbox['id']
-            logger.info(f"Processing notification ID: {notification_id}")
-
-            title = row.find('td', {'class': 'min-w-30'})
-            title = title.text.strip() if title else ''
-            
-            code_info = self.extract_code_info(row)
-            
-            content = self.get_notification_content(notification_id)
-            if not content:
-                return None
-                
-            result = {
-                'id': notification_id,
-                'title': f"{title} {code_info}".strip(),
-                'header_info': content['header_info'],
-                'content_info': content['content_info'],
-                'history_info': content['history_info'],
-                'period_info': content['period_info']
-            }
-            return result
-        except Exception as e:
-            logger.error(f"Error processing notification: {e}")
+        checkbox = row.find('input', {'type': 'checkbox'})
+        if not checkbox or 'id' not in checkbox.attrs:
             return None
+                
+        notification_id = checkbox['id']
+        logger.info(f"Processing notification ID: {notification_id}")
+
+        title = row.find('td', {'class': 'min-w-30'})
+        title = title.text.strip() if title else ''
+            
+        code_info = self.extract_code_info(row)
+            
+        content = self.get_notification_content(notification_id)
+        if not content:
+            return None
+                
+        result = {
+            'id': notification_id,
+            'title': f"{title} {code_info}".strip(),
+            'header_info': content['header_info'],
+            'content_info': content['content_info'],
+            'history_info': content['history_info'],
+            'period_info': content['period_info']
+        }
+        return result
 
     def parse_notifications(self, html_content):
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -191,14 +183,10 @@ class ContentScraper:
         header_content_df.to_csv('header_content.csv', index=False, encoding='utf-8-sig')
 
     def fetch_html_content(self, url):
-        try:
-            logger.info(f"URL is being accessed: {url}")
-            response = requests.get(url, headers=self.get_headers())
-            response.raise_for_status()
-            return response.text
-        except requests.RequestException as e:
-            logger.error(f"URL connection error: {e}")
-            return None
+        logger.info(f"URL is being accessed: {url}")
+        response = requests.get(url, headers=self.get_headers())
+        response.raise_for_status()
+        return response.text
 
     def process_content(self):
         url = "https://www.kap.org.tr/tr/bildirim-sorgu-sonuc?srcbar=Y&cmp=Y&cat=4&s=4028328c594bfdca01594c0af9aa0057&st=Finansal%20Rapor&kw=bilan%C3%A7o&slf=FR"

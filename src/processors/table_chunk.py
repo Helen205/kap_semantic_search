@@ -18,33 +18,29 @@ class TableChunk:
 
 
     def process_table(self,file_path):
-        try:
-            filename = os.path.basename(file_path)
-            parts = filename.split('_')
-            notification_id = parts[0]
-            table_num = parts[2].replace('.xlsx', '')  
+        filename = os.path.basename(file_path)
+        parts = filename.split('_')
+        notification_id = parts[0]
+        table_num = parts[2].replace('.xlsx', '')  
             
-            df = pd.read_excel(file_path)
+        df = pd.read_excel(file_path)
             
-            first_three_rows = df.iloc[:2]
-            remaining_rows = df.iloc[2:]
+        first_three_rows = df.iloc[:2]
+        remaining_rows = df.iloc[2:]
             
-            chunk_size = 15
-            chunks = [remaining_rows[i:i+chunk_size] for i in range(0, len(remaining_rows), chunk_size)]
+        chunk_size = 15
+        chunks = [remaining_rows[i:i+chunk_size] for i in range(0, len(remaining_rows), chunk_size)]
             
-            for idx, chunk in enumerate(chunks):
-                combined_chunk = pd.concat([first_three_rows, chunk])
-                output_filename = f"notification_htmls/{notification_id}_table_{table_num}_chunk_{idx+1}.xlsx"
-                combined_chunk.to_excel(output_filename, index=False)
+        for idx, chunk in enumerate(chunks):
+            combined_chunk = pd.concat([first_three_rows, chunk])
+            output_filename = f"notification_htmls/{notification_id}_table_{table_num}_chunk_{idx+1}.xlsx"
+            combined_chunk.to_excel(output_filename, index=False)
                 
-            print(f"Processed {filename} - created {len(chunks)} chunks")
+        print(f"Processed {filename} - created {len(chunks)} chunks")
 
-            if '_chunk_' not in filename:
-                os.remove(file_path)
-                print(f"Deleted original file: {filename}")
-            
-        except Exception as e:
-            print(f"Error processing {file_path}: {str(e)}")
+        if '_chunk_' not in filename:
+            os.remove(file_path)
+            print(f"Deleted original file: {filename}")
         
         self.chroma_service.save_to_chroma_table()
 
