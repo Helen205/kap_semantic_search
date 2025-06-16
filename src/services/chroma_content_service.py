@@ -33,11 +33,14 @@ class ChromaContentService:
     def load_last_processed(self):
         if not os.path.exists(self.LAST_PROCESSED_CONTENT):
             return None
-            
-        with open(self.LAST_PROCESSED_CONTENT, 'r') as f:
-            data = json.load(f)
-            last_id = data.get('last_id')
-            return int(last_id) if last_id is not None else None
+        try:    
+            with open(self.LAST_PROCESSED_CONTENT, 'r') as f:
+                data = json.load(f)
+                last_id = data.get('last_id')
+                return int(last_id) if last_id is not None else None
+        except Exception as e:
+            logger.error(f"Error loading last processed file: {e}")
+            return {}
 
     def save_last_processed_to_content(self, notification_id):
         os.makedirs(os.path.dirname(self.LAST_PROCESSED_CONTENT), exist_ok=True)

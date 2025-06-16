@@ -183,10 +183,14 @@ class ContentScraper:
         header_content_df.to_csv('header_content.csv', index=False, encoding='utf-8-sig')
 
     def fetch_html_content(self, url):
-        logger.info(f"URL is being accessed: {url}")
-        response = requests.get(url, headers=self.get_headers())
-        response.raise_for_status()
-        return response.text
+        try:
+            logger.info(f"URL is being accessed: {url}")
+            response = requests.get(url, headers=self.get_headers())
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as e:
+            logger.error(f"URL connection error: {e}")
+            return None
 
     def process_content(self):
         url = "https://www.kap.org.tr/tr/bildirim-sorgu-sonuc?srcbar=Y&cmp=Y&cat=4&s=4028328c594bfdca01594c0af9aa0057&st=Finansal%20Rapor&kw=bilan%C3%A7o&slf=FR"

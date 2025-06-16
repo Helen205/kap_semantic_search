@@ -23,9 +23,12 @@ class ExcelToHtml:
     def load_last_processed_to_table(self):
         if not os.path.exists(self.LAST_PROCESSED_TABLE):
             return {}
-        
-        with open(self.LAST_PROCESSED_TABLE, 'r') as f:
-            return json.load(f)
+        try:
+            with open(self.LAST_PROCESSED_TABLE, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading last processed file: {e}")
+            return {}
 
     def create_session(self):
         session = requests.Session()
@@ -50,17 +53,19 @@ class ExcelToHtml:
     def get_notification_content(self, notification_id):
         url = f"https://www.kap.org.tr/en/api/notification/export/excel/{notification_id}"
         
+        try:
+            session = self.create_session()
+            response = session.get(url, headers=self.get_headers(), stream=True, timeout=30)
+            response.raise_for_status()
 
-        session = self.create_session()
-        response = session.get(url, headers=self.get_headers(), stream=True, timeout=30)
-        response.raise_for_status()
-
-        os.makedirs('notification_htmls', exist_ok=True)
-        with open(f'notification_htmls/{notification_id}.html', 'w', encoding='utf-8') as f:
-            f.write(response.text)
-        logger.info(f"HTML content saved for notification {notification_id}")
-            
-        return response.text
+            os.makedirs('notification_htmls', exist_ok=True)
+            with open(f'notification_htmls/{notification_id}.html', 'w', encoding='utf-8') as f:
+                f.write(response.text)
+            logger.info(f"HTML content saved for notification {notification_id}")
+            return response.text
+        except Exception as e:
+            logger.error(f"Notification content not fetched (ID: {notification_id}): {e}")
+            return None
 
     def process_notification_row(self, row):
         checkbox = row.find('input', {'type': 'checkbox'})
